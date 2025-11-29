@@ -1,0 +1,175 @@
+name: Build and Deploy to Build Branch
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build-and-push:
+    name: Build and Push to Build Branch
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api.sms4u.pro/api/v1' }}
+          VITE_HELEKET_API_KEY: ${{ secrets.VITE_HELEKET_API_KEY }}
+          VITE_HELEKET_MERCHANT_ID: ${{ secrets.VITE_HELEKET_MERCHANT_ID }}
+          VITE_HELEKET_API_URL: ${{ secrets.VITE_HELEKET_API_URL || 'https://api.heleket.com/v1' }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: build
+          path: build-branch
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Prepare build branch
+        run: |
+          cd build-branch
+          
+          # Remove all files except .git
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} + || true
+          
+          # Copy dist folder contents
+          cp -r ../dist/* . || true
+          
+          # Create README
+          cat > README.md << 'EOF'
+          # Build Files
+          
+          This branch contains only the built files for deployment.
+          Source code is in the 'main' branch.
+          
+          **Do not edit this branch manually!**
+          This branch is automatically updated by GitHub Actions.
+          EOF
+          
+          # Create minimal .gitignore
+          echo "# Build branch - keep all files" > .gitignore
+
+      - name: Commit and push to build branch
+        run: |
+          cd build-branch
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Build: Deploy from main (${{ github.sha }}) [skip ci]"
+            git push origin build
+          fi
+
+  deploy-to-server:
+    name: Deploy Build to Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: build
+          fetch-depth: 1
+
+      - name: Prepare server and backup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 30s
+          script: |
+            # Create deployment directory if it doesn't exist
+            mkdir -p ${{ secrets.DEPLOY_PATH }}
+            
+            # Backup current deployment if exists
+            if [ -d "${{ secrets.DEPLOY_PATH }}" ] && [ "$(ls -A ${{ secrets.DEPLOY_PATH }})" ]; then
+              BACKUP_DIR="${{ secrets.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)"
+              cp -r ${{ secrets.DEPLOY_PATH }} $BACKUP_DIR
+              echo "✅ Backup created: $BACKUP_DIR"
+            fi
+            
+            # Remove old backups (keep last 3)
+            cd $(dirname ${{ secrets.DEPLOY_PATH }})
+            ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf 2>/dev/null || true
+
+      - name: Deploy to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 300s
+          command_timeout: 120s
+          source: "*"
+          target: ${{ secrets.DEPLOY_PATH }}
+          strip_components: 0
+          rm: false
+          overwrite: true
+
+      - name: Add meta tag and restart web server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 180s
+          command_timeout: 90s
+          script: |
+            # Set proper permissions
+            chmod -R 755 ${{ secrets.DEPLOY_PATH }}
+            
+            # Restart nginx if exists
+            if command -v nginx &> /dev/null; then
+              sudo systemctl reload nginx 2>/dev/null || sudo service nginx reload 2>/dev/null || true
+              echo "✅ Nginx reloaded"
+            fi
+            
+            # Restart apache if exists
+            if command -v apache2 &> /dev/null; then
+              sudo systemctl reload apache2 2>/dev/null || sudo service apache2 reload 2>/dev/null || true
+              echo "✅ Apache reloaded"
+            fi
+            
+            echo "✅ Deployment completed on server"
+            exit 0
+
+      - name: Deployment Success
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Server: ${{ secrets.SERVER_HOST }}"
+          echo "📁 Path: ${{ secrets.DEPLOY_PATH }}"
+          echo "🌿 Build Branch: build"
+

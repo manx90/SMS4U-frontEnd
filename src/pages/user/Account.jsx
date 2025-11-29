@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "../../components/shared/CopyButton";
+import HeleketPayment from "../../components/payment/HeleketPayment";
 import {
 	User,
 	Key,
@@ -30,6 +31,7 @@ import {
 	Wallet,
 	Shield,
 	AlertCircle,
+	CreditCard,
 } from "lucide-react";
 
 export default function Account() {
@@ -62,9 +64,13 @@ export default function Account() {
 				defaultValue="profile"
 				className="space-y-6"
 			>
-				<TabsList className="grid w-full grid-cols-3">
+				<TabsList className="grid w-full grid-cols-4">
 					<TabsTrigger value="profile">
 						Profile
+					</TabsTrigger>
+					<TabsTrigger value="payment">
+						<CreditCard className="h-4 w-4 mr-2" />
+						Payment
 					</TabsTrigger>
 					<TabsTrigger value="security">
 						Security
@@ -170,6 +176,14 @@ export default function Account() {
 							</div>
 						</CardContent>
 					</Card>
+				</TabsContent>
+
+				{/* Payment Tab */}
+				<TabsContent
+					value="payment"
+					className="space-y-4"
+				>
+					<HeleketPayment />
 				</TabsContent>
 
 				{/* Security Tab */}

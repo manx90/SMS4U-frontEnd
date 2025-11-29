@@ -5,7 +5,7 @@ import {
 	useCallback,
 	useRef,
 } from "react";
-import { authApi } from "../services/api";
+import { authApi, userApi } from "../services/api";
 import { toast } from "sonner";
 
 const AuthContext = createContext(null);
@@ -304,6 +304,29 @@ export const AuthProvider = ({ children }) => {
 		}
 	};
 
+	const refreshUserData = async () => {
+		try {
+			if (!user?.id) {
+				console.warn("Cannot refresh user data: no user ID");
+				return;
+			}
+
+			const response = await userApi.getOne(user.id);
+			if (response?.state === "200" && response?.data) {
+				const updatedUser = response.data;
+				setUser(updatedUser);
+				localStorage.setItem(
+					"user",
+					JSON.stringify(updatedUser),
+				);
+				return updatedUser;
+			}
+		} catch (error) {
+			console.error("Error refreshing user data:", error);
+			toast.error("Failed to refresh user data");
+		}
+	};
+
 	const isAdmin = () => {
 		return user?.role === "admin";
 	};
@@ -328,6 +351,7 @@ export const AuthProvider = ({ children }) => {
 		loginWithKey,
 		logout,
 		updateUserBalance,
+		refreshUserData,
 		isAdmin,
 		isUser,
 		hasPermission,

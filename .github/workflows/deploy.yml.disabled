@@ -1,0 +1,18 @@
+# This workflow has been disabled
+# Use build-and-deploy.yml instead
+# This file is kept for reference
+
+name: Deploy to Production Server (DISABLED)
+
+on:
+  workflow_dispatch: # Only manual trigger, disabled for automatic runs
+
+jobs:
+  deploy:
+    name: Build and Deploy (DISABLED)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: This workflow is disabled
+        run: echo "This workflow is disabled. Use build-and-deploy.yml instead"
+

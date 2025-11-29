@@ -66,6 +66,9 @@ const Account = lazy(() =>
 const ApiDocs = lazy(() =>
 	import("./pages/user/ApiDocs"),
 );
+const HeleketPayment = lazy(() =>
+	import("./components/payment/HeleketPayment"),
+);
 
 // Loading fallback component
 const PageLoader = () => (
@@ -200,6 +203,10 @@ function App() {
 								<Route
 									path="api-docs"
 									element={<ApiDocs />}
+								/>
+								<Route
+									path="add-funds"
+									element={<HeleketPayment />}
 								/>
 							</Route>
 

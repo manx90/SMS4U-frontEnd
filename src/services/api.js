@@ -741,4 +741,72 @@ export const emailAdminApi = {
 	},
 };
 
+// ==================== Payment APIs ====================
+export const paymentApi = {
+	/**
+	 * Update user balance after successful payment
+	 * @param {number} amount - Amount to add to balance
+	 * @returns {Promise} Updated user data
+	 */
+	updateBalanceAfterPayment: async (amount) => {
+		try {
+			const user = JSON.parse(
+				localStorage.getItem("user") || "{}",
+			);
+			if (!user.id) {
+				throw new Error("User ID not found");
+			}
+			// Get current balance and add the new amount
+			const currentBalance = user.balance || 0;
+			const newBalance = currentBalance + amount;
+
+			const response = await userApi.update(user.id, {
+				balance: newBalance,
+			});
+			return response;
+		} catch (error) {
+			throw error;
+		}
+	},
+
+	/**
+	 * Check payment status from backend
+	 * @param {string} paymentId - Payment ID or invoice UUID
+	 * @returns {Promise} Payment status
+	 */
+	checkPaymentStatus: async (paymentId) => {
+		try {
+			const response = await api.get(
+				`/payment/status/${paymentId}`,
+			);
+			return response;
+		} catch (error) {
+			throw error;
+		}
+	},
+
+	/**
+	 * Get payment history
+	 * @returns {Promise} Payment history
+	 */
+	getPaymentHistory: async () => {
+		try {
+			const user = JSON.parse(
+				localStorage.getItem("user") || "{}",
+			);
+			const response = await api.get(
+				"/payment/history",
+				{
+					params: {
+						userId: user.id,
+					},
+				},
+			);
+			return response;
+		} catch (error) {
+			throw error;
+		}
+	},
+};
+
 export default api;
