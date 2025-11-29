@@ -749,24 +749,20 @@ export const paymentApi = {
 	 * @returns {Promise} Updated user data
 	 */
 	updateBalanceAfterPayment: async (amount) => {
-		try {
-			const user = JSON.parse(
-				localStorage.getItem("user") || "{}",
-			);
-			if (!user.id) {
-				throw new Error("User ID not found");
-			}
-			// Get current balance and add the new amount
-			const currentBalance = user.balance || 0;
-			const newBalance = currentBalance + amount;
-
-			const response = await userApi.update(user.id, {
-				balance: newBalance,
-			});
-			return response;
-		} catch (error) {
-			throw error;
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
+		if (!user.id) {
+			throw new Error("User ID not found");
 		}
+		// Get current balance and add the new amount
+		const currentBalance = user.balance || 0;
+		const newBalance = currentBalance + amount;
+
+		const response = await userApi.update(user.id, {
+			balance: newBalance,
+		});
+		return response;
 	},
 
 	/**
@@ -775,14 +771,10 @@ export const paymentApi = {
 	 * @returns {Promise} Payment status
 	 */
 	checkPaymentStatus: async (paymentId) => {
-		try {
-			const response = await api.get(
-				`/payment/status/${paymentId}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/payment/status/${paymentId}`,
+		);
+		return response;
 	},
 
 	/**
@@ -790,22 +782,18 @@ export const paymentApi = {
 	 * @returns {Promise} Payment history
 	 */
 	getPaymentHistory: async () => {
-		try {
-			const user = JSON.parse(
-				localStorage.getItem("user") || "{}",
-			);
-			const response = await api.get(
-				"/payment/history",
-				{
-					params: {
-						userId: user.id,
-					},
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
+		const response = await api.get(
+			"/payment/history",
+			{
+				params: {
+					userId: user.id,
 				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+			},
+		);
+		return response;
 	},
 };
 

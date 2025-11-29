@@ -11,6 +11,9 @@ jobs:
   build-and-push:
     name: Build and Push to Build Branch
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     
     steps:
       - name: Checkout code
@@ -87,6 +90,8 @@ jobs:
       - name: Commit and push to build branch
         run: |
           cd build-branch
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git add -A
           if git diff --staged --quiet; then
             echo "ℹ️ No changes to commit"
@@ -99,7 +104,7 @@ jobs:
   deploy-to-server:
     name: Deploy Build to Server
     needs: build-and-push
-    if: success() # Only run if build-and-push succeeded
+    if: needs.build-and-push.result == 'success' # Only run if build-and-push succeeded
     runs-on: ubuntu-latest
     
     steps:

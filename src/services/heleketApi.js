@@ -52,37 +52,33 @@ export const heleketPaymentApi = {
 	 * @returns {Promise} Invoice data
 	 */
 	createInvoice: async (amount, orderId, options = {}) => {
-		try {
-			const baseUrl = window.location.origin;
-			const response = await heleketApi.post(
-				"/payment",
-				{
-					amount: String(amount),
-					currency: "RUB",
-					order_id: orderId,
-					url_return:
-						options.urlReturn ||
-						`${baseUrl}/user/account`,
-					url_success:
-						options.urlSuccess ||
-						`${baseUrl}/user/account?payment=success`,
-					url_callback:
-						options.urlCallback ||
-						`${import.meta.env.VITE_API_BASE_URL || "http://176.118.198.153:7071/api/v1"}/payment/heleket/webhook`,
-					lifetime: options.lifetime || 3600, // 1 hour default
-					network: options.network || null, // null = all networks
-					to_currency: options.toCurrency || null, // null = all cryptocurrencies
-					is_payment_multiple:
-						options.isPaymentMultiple !== undefined
-							? options.isPaymentMultiple
-							: true,
-					additional_data: options.additionalData || null,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const baseUrl = window.location.origin;
+		const response = await heleketApi.post(
+			"/payment",
+			{
+				amount: String(amount),
+				currency: "RUB",
+				order_id: orderId,
+				url_return:
+					options.urlReturn ||
+					`${baseUrl}/user/account`,
+				url_success:
+					options.urlSuccess ||
+					`${baseUrl}/user/account?payment=success`,
+				url_callback:
+					options.urlCallback ||
+					`${import.meta.env.VITE_API_BASE_URL || "http://176.118.198.153:7071/api/v1"}/payment/heleket/webhook`,
+				lifetime: options.lifetime || 3600, // 1 hour default
+				network: options.network || null, // null = all networks
+				to_currency: options.toCurrency || null, // null = all cryptocurrencies
+				is_payment_multiple:
+					options.isPaymentMultiple !== undefined
+						? options.isPaymentMultiple
+						: true,
+				additional_data: options.additionalData || null,
+			},
+		);
+		return response;
 	},
 
 	/**
@@ -91,14 +87,10 @@ export const heleketPaymentApi = {
 	 * @returns {Promise} Payment status data
 	 */
 	getPaymentStatus: async (uuid) => {
-		try {
-			const response = await heleketApi.get(
-				`/payment/${uuid}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await heleketApi.get(
+			`/payment/${uuid}`,
+		);
+		return response;
 	},
 
 	/**
@@ -107,14 +99,10 @@ export const heleketPaymentApi = {
 	 * @returns {Promise} Payment information
 	 */
 	getPaymentInfo: async (uuid) => {
-		try {
-			const response = await heleketApi.get(
-				`/payment/${uuid}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await heleketApi.get(
+			`/payment/${uuid}`,
+		);
+		return response;
 	},
 };
 
