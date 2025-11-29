@@ -74,8 +74,6 @@ jobs:
           strip_components: 1
           rm: false
           overwrite: true
-          retry: 3
-          retry_interval: 10s
 
       - name: Add meta tag and restart web server
         uses: appleboy/ssh-action@v1.0.3
