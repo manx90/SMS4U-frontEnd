@@ -125,18 +125,19 @@ jobs:
           command_timeout: 30s
           script: |
             # Create deployment directory if it doesn't exist
-            mkdir -p ${{ secrets.DEPLOY_PATH }}
+            DEPLOY_DIST_PATH="${{ secrets.DEPLOY_PATH }}/dist"
+            mkdir -p $DEPLOY_DIST_PATH
             
             # Backup current deployment if exists
-            if [ -d "${{ secrets.DEPLOY_PATH }}" ] && [ "$(ls -A ${{ secrets.DEPLOY_PATH }})" ]; then
-              BACKUP_DIR="${{ secrets.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)"
-              cp -r ${{ secrets.DEPLOY_PATH }} $BACKUP_DIR
+            if [ -d "$DEPLOY_DIST_PATH" ] && [ "$(ls -A $DEPLOY_DIST_PATH)" ]; then
+              BACKUP_DIR="$DEPLOY_DIST_PATH.backup.$(date +%Y%m%d_%H%M%S)"
+              cp -r $DEPLOY_DIST_PATH $BACKUP_DIR
               echo "✅ Backup created: $BACKUP_DIR"
             fi
             
             # Remove old backups (keep last 3)
-            cd $(dirname ${{ secrets.DEPLOY_PATH }})
-            ls -dt ${{ secrets.DEPLOY_PATH }}.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf 2>/dev/null || true
+            cd $(dirname $DEPLOY_DIST_PATH)
+            ls -dt $DEPLOY_DIST_PATH.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf 2>/dev/null || true
 
       - name: Deploy to server via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -148,7 +149,7 @@ jobs:
           timeout: 300s
           command_timeout: 120s
           source: "*"
-          target: ${{ secrets.DEPLOY_PATH }}
+          target: ${{ secrets.DEPLOY_PATH }}/dist
           strip_components: 0
           rm: false
           overwrite: true
@@ -164,7 +165,7 @@ jobs:
           command_timeout: 90s
           script: |
             # Set proper permissions
-            chmod -R 755 ${{ secrets.DEPLOY_PATH }}
+            chmod -R 755 ${{ secrets.DEPLOY_PATH }}/dist
             
             # Restart nginx if exists
             if command -v nginx &> /dev/null; then
