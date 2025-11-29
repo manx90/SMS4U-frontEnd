@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { orderApi } from "../../services/api";
 import {
@@ -45,9 +45,24 @@ export default function AdminOrders() {
 	const [activeTab, setActiveTab] = useState("all");
 	const [typeFilter, setTypeFilter] = useState("all");
 
+	const loadOrders = useCallback(async () => {
+		setLoading(true);
+		try {
+			const response = await orderApi.getAll(user.apiKey);
+			if (response.state === "200" && response.data) {
+				setOrders(response.data);
+				setFiltered(response.data);
+			}
+		} catch (error) {
+			toast.error(`Failed to load orders: ${error.message}`);
+		} finally {
+			setLoading(false);
+		}
+	}, [user.apiKey]);
+
 	useEffect(() => {
 		loadOrders();
-	}, []);
+	}, [loadOrders]);
 
 	useEffect(() => {
 		let result = orders;
@@ -82,21 +97,6 @@ export default function AdminOrders() {
 
 		setFiltered(result);
 	}, [searchQuery, orders, activeTab, typeFilter]);
-
-	const loadOrders = async () => {
-		setLoading(true);
-		try {
-			const response = await orderApi.getAll(user.apiKey);
-			if (response.state === "200" && response.data) {
-				setOrders(response.data);
-				setFiltered(response.data);
-			}
-		} catch (error) {
-			toast.error(`Failed to load orders: ${error.message}`);
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	const handleProcessRefunds = async () => {
 		try {

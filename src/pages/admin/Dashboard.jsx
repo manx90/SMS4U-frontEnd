@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import {
 	userApi,
@@ -36,11 +36,7 @@ export default function AdminDashboard() {
 	const [recentOrders, setRecentOrders] =
 		useState([]);
 
-	useEffect(() => {
-		loadDashboardData();
-	}, []);
-
-	const loadDashboardData = async () => {
+	const loadDashboardData = useCallback(async () => {
 		setLoading(true);
 		try {
 			// Load all dashboard data in parallel
@@ -84,7 +80,11 @@ export default function AdminDashboard() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [user.apiKey]);
+
+	useEffect(() => {
+		loadDashboardData();
+	}, [loadDashboardData]);
 
 	const statsCards = [
 		{

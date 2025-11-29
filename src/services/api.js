@@ -221,110 +221,78 @@ export const authApi = {
 	},
 
 	loginWithKey: async (apiKey) => {
-		try {
-			const response = await api.get(
-				"/auth/login-with-key",
-				{
-					params: { apiKey },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/auth/login-with-key",
+			{
+				params: { apiKey },
+			},
+		);
+		return response;
 	},
 
 	refreshToken: async (refreshToken) => {
-		try {
-			const response = await axios.post(
-				`${
-					import.meta.env.VITE_API_BASE_URL ||
-					"http://localhost:7071/api/v1"
-				}/auth/refresh-token`,
-				{ refreshToken },
-			);
-			return response.data;
-		} catch (error) {
-			throw error;
-		}
+		const response = await axios.post(
+			`${
+				import.meta.env.VITE_API_BASE_URL ||
+				"http://localhost:7071/api/v1"
+			}/auth/refresh-token`,
+			{ refreshToken },
+		);
+		return response.data;
 	},
 
 	verifyToken: async () => {
-		try {
-			const response = await api.get(
-				"/auth/verify-token",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/auth/verify-token",
+		);
+		return response;
 	},
 };
 
 // ==================== User APIs ====================
 export const userApi = {
 	getAll: async () => {
-		try {
-			const response = await api.get(
-				"/users/all",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/users/all",
+		);
+		return response;
 	},
 
 	getOne: async (id) => {
-		try {
-			const response = await api.get(
-				`/users/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/users/${id}`,
+		);
+		return response;
 	},
 
 	create: async (userData) => {
-		try {
-			const response = await api.get(
-				"/users/create",
-				{
-					params: userData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/users/create",
+			{
+				params: userData,
+			},
+		);
+		return response;
 	},
 
 	update: async (id, userData) => {
-		try {
-			const response = await api.get(
-				`/users/update/${id}`,
-				{
-					params: userData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/users/update/${id}`,
+			{
+				params: userData,
+			},
+		);
+		return response;
 	},
 
 	delete: async (id) => {
-		try {
-			const response = await api.delete(
-				"/users/delete",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.delete(
+			"/users/delete",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 };
 

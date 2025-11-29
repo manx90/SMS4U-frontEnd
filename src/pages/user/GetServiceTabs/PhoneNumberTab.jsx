@@ -559,8 +559,6 @@ export default function PhoneNumberTab({
 											selectedCountryName &&
 											selectedServiceName
 										) {
-											const countryKey =
-												selectedCountryName?.toLowerCase();
 											const providerKey = `provider${value}`;
 											const isServiceAvailable =
 												pricing.some(

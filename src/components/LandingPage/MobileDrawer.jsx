@@ -1,6 +1,6 @@
 import { memo } from "react";
 import {
-	motion,
+	motion, // eslint-disable-line no-unused-vars
 	AnimatePresence,
 } from "framer-motion";
 import { X, LogIn, UserPlus } from "lucide-react";
