@@ -16,12 +16,19 @@
 
 ### الطريقة 1: استخدام Script (موصى به)
 
+**على Linux/Mac:**
 ```bash
 # جعل الـ script قابل للتنفيذ
 chmod +x scripts/setup-build-branch.sh
 
 # تشغيل الـ script
 ./scripts/setup-build-branch.sh
+```
+
+**على Windows (PowerShell):**
+```powershell
+# تشغيل الـ script
+.\scripts\setup-build-branch.ps1
 ```
 
 ### الطريقة 2: يدوياً
