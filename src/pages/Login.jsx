@@ -130,7 +130,7 @@ export default function Login() {
 						</div>
 					</div>
 					<CardTitle className="text-2xl font-bold text-center">
-						Welcome Back 
+						Welcome Back KLN
 					</CardTitle>
 					<CardDescription className="text-center">
 						Enter your credentials to access your

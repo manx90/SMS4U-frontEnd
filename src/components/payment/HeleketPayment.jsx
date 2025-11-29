@@ -199,11 +199,26 @@ export default function HeleketPayment() {
 			}
 		} catch (error) {
 			console.error("Error creating invoice:", error);
-			const errorMessage =
-				error?.message ||
-				error?.errors ||
-				"Failed to create payment invoice. Please try again.";
-			toast.error(errorMessage);
+			
+			// Handle specific error messages
+			let errorMessage = "Failed to create payment invoice. Please try again.";
+			
+			if (error?.error) {
+				errorMessage = error.error;
+			} else if (error?.message) {
+				errorMessage = error.message;
+			} else if (error?.response?.data?.error) {
+				errorMessage = error.response.data.error;
+			} else if (error?.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			}
+			
+			// Show specific message for configuration errors
+			if (errorMessage.includes("not configured") || errorMessage.includes("not configured")) {
+				toast.error("Payment service is not configured on the server. Please contact support.");
+			} else {
+				toast.error(errorMessage);
+			}
 		} finally {
 			setLoading(false);
 		}
