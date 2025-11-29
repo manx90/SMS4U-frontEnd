@@ -77,16 +77,34 @@ jobs:
           retry: 3
           retry_interval: 10s
 
-      - name: Restart web server
+      - name: Add meta tag and restart web server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          timeout: 60s
-          command_timeout: 30s
+          timeout: 180s
+          command_timeout: 90s
           script: |
+            # Add meta tag to server.js
+            SERVER_JS="${{ secrets.DEPLOY_PATH }}/dist/server.js"
+            if [ -f "$SERVER_JS" ]; then
+              if ! grep -q "heleket" "$SERVER_JS"; then
+                echo "" >> "$SERVER_JS"
+                echo "// Add heleket meta tag" >> "$SERVER_JS"
+                echo "if (typeof document !== 'undefined') {" >> "$SERVER_JS"
+                echo "  const meta = document.createElement('meta');" >> "$SERVER_JS"
+                echo "  meta.name = 'heleket';" >> "$SERVER_JS"
+                echo "  meta.content = 'a5b5947f';" >> "$SERVER_JS"
+                echo "  document.head.appendChild(meta);" >> "$SERVER_JS"
+                echo "}" >> "$SERVER_JS"
+                echo "✅ Meta tag added to server.js"
+              else
+                echo "✅ Meta tag already exists in server.js"
+              fi
+            fi
+            
             # Set proper permissions
             chmod -R 755 ${{ secrets.DEPLOY_PATH }}/dist
             
@@ -103,6 +121,7 @@ jobs:
             fi
             
             echo "✅ Deployment completed on server"
+            exit 0
 
       - name: Deployment Success
         run: |
