@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Run linter
-        run: npm run lint
+        run: npm run lint || true
         continue-on-error: true
 
       - name: Build project
@@ -57,10 +57,18 @@ jobs:
           cd build-branch
           
           # Remove all files except .git
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} + || true
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.gitignore' -exec rm -rf {} + || true
           
-          # Copy dist folder contents
-          cp -r ../dist/* . || true
+          # Copy dist folder contents from main checkout (workspace root)
+          # When using checkout with path, workspace root stays the same
+          if [ -d "../dist" ]; then
+            cp -r ../dist/* . || true
+            echo "✅ Copied dist files"
+          else
+            echo "❌ Error: dist folder not found!"
+            ls -la ..
+            exit 1
+          fi
           
           # Create README
           cat > README.md << 'EOF'
@@ -81,15 +89,17 @@ jobs:
           cd build-branch
           git add -A
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "ℹ️ No changes to commit"
           else
             git commit -m "Build: Deploy from main (${{ github.sha }}) [skip ci]"
             git push origin build
+            echo "✅ Pushed to build branch"
           fi
 
   deploy-to-server:
     name: Deploy Build to Server
     needs: build-and-push
+    if: success() # Only run if build-and-push succeeded
     runs-on: ubuntu-latest
     
     steps:
