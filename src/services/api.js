@@ -299,203 +299,139 @@ export const userApi = {
 // ==================== Service APIs ====================
 export const serviceApi = {
 	getAll: async () => {
-		try {
-			const response = await api.get("/service/");
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get("/service/");
+		return response;
 	},
 
 	getOne: async (id) => {
-		try {
-			const response = await api.get(
-				`/service/service/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/service/service/${id}`,
+		);
+		return response;
 	},
 
 	create: async (serviceData) => {
-		try {
-			const response = await api.get(
-				"/service/create",
-				{
-					params: serviceData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/service/create",
+			{
+				params: serviceData,
+			},
+		);
+		return response;
 	},
 
 	update: async (id, serviceData) => {
-		try {
-			const response = await api.get(
-				"/service/update",
-				{
-					params: { id, ...serviceData },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/service/update",
+			{
+				params: { id, ...serviceData },
+			},
+		);
+		return response;
 	},
 
 	delete: async (id) => {
-		try {
-			const response = await api.get(
-				"/service/remove",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/service/remove",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 };
 
 // ==================== Country APIs ====================
 export const countryApi = {
 	getAll: async () => {
-		try {
-			const response = await api.get("/country/");
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get("/country/");
+		return response;
 	},
 
 	getOne: async (id) => {
-		try {
-			const response = await api.get(
-				`/country/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/country/${id}`,
+		);
+		return response;
 	},
 
 	create: async (countryData) => {
-		try {
-			const response = await api.get(
-				"/country/create",
-				{
-					params: countryData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/country/create",
+			{
+				params: countryData,
+			},
+		);
+		return response;
 	},
 
 	delete: async (id) => {
-		try {
-			const response = await api.get(
-				"/country/remove",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/country/remove",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 };
 
 // ==================== Pricing APIs ====================
 export const pricingApi = {
 	getAll: async () => {
-		try {
-			const response = await api.get("/pricing/");
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get("/pricing/");
+		return response;
 	},
 
 	getOne: async (id) => {
-		try {
-			const response = await api.get(
-				`/pricing/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/pricing/${id}`,
+		);
+		return response;
 	},
 
 	getByCountry: async (countryId) => {
-		try {
-			const response = await api.get(
-				`/pricing/country/${countryId}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/pricing/country/${countryId}`,
+		);
+		return response;
 	},
 
 	getByService: async (serviceId) => {
-		try {
-			const response = await api.get(
-				`/pricing/service/${serviceId}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/pricing/service/${serviceId}`,
+		);
+		return response;
 	},
 
 	create: async (pricingData) => {
-		try {
-			const response = await api.get(
-				"/pricing/create",
-				{
-					params: pricingData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/pricing/create",
+			{
+				params: pricingData,
+			},
+		);
+		return response;
 	},
 
 	update: async (id, price) => {
-		try {
-			const response = await api.get(
-				"/pricing/update",
-				{
-					params: { id, price },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/pricing/update",
+			{
+				params: { id, price },
+			},
+		);
+		return response;
 	},
 
 	delete: async (id) => {
-		try {
-			const response = await api.get(
-				"/pricing/remove",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/pricing/remove",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 };
 
