@@ -7,6 +7,7 @@ import {
 	User as UserIcon,
 	Settings,
 	Wallet,
+	MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,18 @@ export function Topbar({ onMenuClick }) {
 
 			{/* Right Side Actions */}
 			<div className="flex items-center gap-2">
+				{/* Support Link */}
+				<a
+					href="https://t.me/sms4u_pro"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:bg-muted transition-colors"
+					title="Support on Telegram"
+				>
+					<MessageCircle className="h-4 w-4" />
+					<span className="hidden sm:inline">Support</span>
+				</a>
+
 				{/* Visual Theme Selector */}
 				{/* <ThemeSelector /> */}
 

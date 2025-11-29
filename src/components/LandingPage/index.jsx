@@ -12,6 +12,7 @@ import {
 	Menu,
 	LogIn,
 	UserPlus,
+	MessageCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -130,6 +131,18 @@ const LandingPage = () => {
 								>
 									FAQ
 								</NavigationMenuLink>
+							</NavigationMenuItem>
+							{/* Support Link */}
+							<NavigationMenuItem>
+								<a
+									href="https://t.me/sms4u_pro"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-sm font-medium text-gray-900 dark:text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#6EE7B7] hover:to-[#3B82F6] transition-all flex items-center gap-1"
+								>
+									<MessageCircle className="w-4 h-4" />
+									Support
+								</a>
 							</NavigationMenuItem>
 							{/* Auth Buttons */}
 							<NavigationMenuItem>

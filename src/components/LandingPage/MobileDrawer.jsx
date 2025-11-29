@@ -3,7 +3,7 @@ import {
 	motion, // eslint-disable-line no-unused-vars
 	AnimatePresence,
 } from "framer-motion";
-import { X, LogIn, UserPlus } from "lucide-react";
+import { X, LogIn, UserPlus, MessageCircle } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { useNavigate } from "react-router-dom";
 
@@ -18,6 +18,7 @@ const MobileDrawer = memo(
 				label: "How It Works",
 			},
 			{ href: "#faq", label: "FAQ" },
+			{ href: "https://t.me/sms4u_pro", label: "Support", external: true },
 		];
 
 		const handleLinkClick = (e, href) => {
@@ -104,14 +105,21 @@ const MobileDrawer = memo(
 												>
 													<a
 														href={link.href}
-														onClick={(e) =>
+														onClick={(e) => {
+															if (link.external) {
+																onClose();
+																return;
+															}
 															handleLinkClick(
 																e,
 																link.href,
-															)
-														}
-														className="block px-4 py-3 text-base font-medium text-gray-900 dark:text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#6EE7B7] hover:to-[#3B82F6] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+															);
+														}}
+														target={link.external ? "_blank" : undefined}
+														rel={link.external ? "noopener noreferrer" : undefined}
+														className="block px-4 py-3 text-base font-medium text-gray-900 dark:text-white hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-[#6EE7B7] hover:to-[#3B82F6] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-2"
 													>
+														{link.external && <MessageCircle className="w-4 h-4" />}
 														{link.label}
 													</a>
 												</motion.li>
