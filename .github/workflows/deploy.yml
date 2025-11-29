@@ -1,11 +1,11 @@
-name: Deploy to Production Server
+name: Deploy to Production Server (DISABLED)
+
+# ⚠️ This workflow is DISABLED
+# Use build-and-deploy.yml instead
+# This workflow is kept for reference only
 
 on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch: # Only manual trigger - disabled for automatic runs
 
 jobs:
   deploy:
