@@ -41,6 +41,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 30s
           script: |
             # Create deployment directory if it doesn't exist
             mkdir -p ${{ secrets.DEPLOY_PATH }}/dist
@@ -65,11 +67,15 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 300s
+          command_timeout: 120s
           source: "dist/*"
           target: ${{ secrets.DEPLOY_PATH }}/dist
           strip_components: 1
           rm: false
           overwrite: true
+          retry: 3
+          retry_interval: 10s
 
       - name: Restart web server
         uses: appleboy/ssh-action@v1.0.3
@@ -78,6 +84,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 30s
           script: |
             # Set proper permissions
             chmod -R 755 ${{ secrets.DEPLOY_PATH }}/dist
