@@ -1,110 +1,67 @@
-import axios from "axios";
+import api from "./api.js";
 
-// Create axios instance for Heleket API
-const heleketApi = axios.create({
-	baseURL:
-		import.meta.env.VITE_HELEKET_API_URL ||
-		"https://api.heleket.com/v1",
-	timeout: 30000,
-	headers: {
-		"Content-Type": "application/json",
-	},
-});
-
-// Request interceptor to add API key
-heleketApi.interceptors.request.use(
-	(config) => {
-		const apiKey =
-			import.meta.env.VITE_HELEKET_API_KEY;
-		if (apiKey) {
-			config.headers.Authorization = `Bearer ${apiKey}`;
-		}
-		return config;
-	},
-	(error) => {
-		return Promise.reject(error);
-	},
-);
-
-// Response interceptor
-heleketApi.interceptors.response.use(
-	(response) => {
-		return response.data;
-	},
-	(error) => {
-		if (error.response?.data) {
-			return Promise.reject(error.response.data);
-		}
-		return Promise.reject({
-			state: 1,
-			message: error.message || "Something went wrong",
-		});
-	},
-);
-
-// ==================== Heleket Payment APIs ====================
+// ==================== Heleket Payment APIs via Backend ====================
+// These APIs use Backend endpoints to avoid CORS issues
 export const heleketPaymentApi = {
 	/**
-	 * Create a payment invoice
+	 * Create a payment invoice via Backend (solves CORS issue)
 	 * @param {string} amount - Amount in RUB
 	 * @param {string} orderId - Unique order ID
 	 * @param {object} options - Additional options
 	 * @returns {Promise} Invoice data
 	 */
 	createInvoice: async (amount, orderId, options = {}) => {
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
 		const baseUrl = window.location.origin;
-		const response = await heleketApi.post(
-			"/payment",
+		
+		const response = await api.post(
+			"/payment/heleket/create-invoice",
 			{
 				amount: String(amount),
-				currency: "RUB",
-				order_id: orderId,
-				url_return:
+				orderId,
+				userId: user?.id,
+				urlReturn:
 					options.urlReturn ||
 					`${baseUrl}/user/account`,
-				url_success:
+				urlSuccess:
 					options.urlSuccess ||
 					`${baseUrl}/user/account?payment=success`,
-				url_callback:
-					options.urlCallback ||
-					`${import.meta.env.VITE_API_BASE_URL || "http://176.118.198.153:7071/api/v1"}/payment/heleket/webhook`,
-				lifetime: options.lifetime || 3600, // 1 hour default
-				network: options.network || null, // null = all networks
-				to_currency: options.toCurrency || null, // null = all cryptocurrencies
-				is_payment_multiple:
-					options.isPaymentMultiple !== undefined
-						? options.isPaymentMultiple
-						: true,
-				additional_data: options.additionalData || null,
+				lifetime: options.lifetime || 3600,
+				additionalData: options.additionalData || null,
 			},
 		);
+		
+		// Backend returns { state: "200", result: {...}, data: {...} }
+		// Return in format expected by Frontend
 		return response;
 	},
 
 	/**
-	 * Get payment status by UUID
+	 * Get payment status by UUID via Backend
 	 * @param {string} uuid - Invoice UUID
 	 * @returns {Promise} Payment status data
 	 */
 	getPaymentStatus: async (uuid) => {
-		const response = await heleketApi.get(
-			`/payment/${uuid}`,
+		const response = await api.get(
+			`/payment/heleket/status/${uuid}`,
 		);
+		
+		// Backend returns { state: "200", result: {...}, data: {...} }
 		return response;
 	},
 
 	/**
-	 * Get payment information
+	 * Get payment information (alias for getPaymentStatus)
 	 * @param {string} uuid - Invoice UUID
 	 * @returns {Promise} Payment information
 	 */
 	getPaymentInfo: async (uuid) => {
-		const response = await heleketApi.get(
-			`/payment/${uuid}`,
-		);
-		return response;
+		return await heleketPaymentApi.getPaymentStatus(uuid);
 	},
 };
 
-export default heleketApi;
+// Keep default export for backward compatibility
+export default heleketPaymentApi;
 

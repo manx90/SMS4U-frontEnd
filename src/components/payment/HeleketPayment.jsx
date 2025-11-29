@@ -73,19 +73,22 @@ export default function HeleketPayment() {
 					invoiceUuid,
 				);
 
-				if (response?.result) {
-					const status = response.result.payment_status;
+				// Backend returns { state: "200", result: {...}, data: {...} }
+				const statusData = response?.result || response?.data;
+				
+				if (statusData) {
+					const status = statusData.payment_status;
 					setPaymentStatus(status);
 
 					// Update invoice data
 					setInvoice((prev) => ({
 						...prev,
-						...response.result,
+						...statusData,
 					}));
 
 					// If paid, update balance and stop polling
 					if (status === "paid") {
-						await handlePaymentSuccess(response.result);
+						await handlePaymentSuccess(statusData);
 					}
 				}
 			} catch (error) {
@@ -97,21 +100,20 @@ export default function HeleketPayment() {
 	const handlePaymentSuccess = async (paymentData) => {
 		try {
 			// Calculate amount in RUB
-			// Use amount (original invoice amount in RUB) or merchant_amount if available
+			// Use merchant_amount if available (this is what user actually receives)
+			// Otherwise use payment_amount or amount
 			const paidAmount =
 				parseFloat(paymentData.merchant_amount) ||
+				parseFloat(paymentData.payment_amount) ||
 				parseFloat(paymentData.amount) ||
 				0;
 
-			// Update balance via backend
-			await paymentApi.updateBalanceAfterPayment(paidAmount);
-
-			// Update local user balance
-			const currentBalance = user?.balance || 0;
-			updateUserBalance(currentBalance + paidAmount);
-
+			// Note: Balance is automatically updated by Backend webhook when payment is confirmed
+			// We just need to refresh user data to show updated balance
+			// The webhook will handle the actual balance update
+			
 			toast.success(
-				`Payment successful! ${paidAmount.toFixed(2)} RUB added to your balance.`,
+				`Payment successful! ${paidAmount.toFixed(2)} RUB will be added to your balance automatically.`,
 			);
 
 			// Stop polling
@@ -121,9 +123,9 @@ export default function HeleketPayment() {
 				setIsPolling(false);
 			}
 		} catch (error) {
-			console.error("Error updating balance:", error);
-			toast.error(
-				"Payment received but failed to update balance. Please contact support.",
+			console.error("Error handling payment success:", error);
+			toast.success(
+				"Payment successful! Your balance will be updated automatically.",
 			);
 		}
 	};
@@ -161,7 +163,8 @@ export default function HeleketPayment() {
 				},
 			);
 
-			if (response?.result) {
+			// Backend returns { state: "200", result: {...}, data: {...} }
+			if (response?.state === "200" && response?.result) {
 				setInvoice(response.result);
 				setPaymentStatus(response.result.payment_status);
 
@@ -174,9 +177,24 @@ export default function HeleketPayment() {
 				}
 
 				toast.success("Payment invoice created successfully!");
+			} else if (response?.state === "200" && response?.data) {
+				// Fallback: if result is not available, use data
+				setInvoice(response.data);
+				setPaymentStatus(response.data.payment_status);
+
+				if (
+					response.data.payment_status !== "paid" &&
+					response.data.payment_status !== "expired"
+				) {
+					startPolling(response.data.uuid);
+				}
+
+				toast.success("Payment invoice created successfully!");
 			} else {
 				throw new Error(
-					response?.message || "Failed to create invoice",
+					response?.error ||
+					response?.message ||
+					"Failed to create invoice",
 				);
 			}
 		} catch (error) {
