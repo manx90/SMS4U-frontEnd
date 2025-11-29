@@ -438,17 +438,13 @@ export const pricingApi = {
 // ==================== Order APIs ====================
 export const orderApi = {
 	getAll: async (apiKey) => {
-		try {
-			const response = await api.get(
-				"/order/orders",
-				{
-					params: { apiKey },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/order/orders",
+			{
+				params: { apiKey },
+			},
+		);
+		return response;
 	},
 
 	getNumber: async (
@@ -456,188 +452,144 @@ export const orderApi = {
 		serviceCode,
 		provider,
 	) => {
-		try {
-			// apiKey is automatically added by request interceptor
-			const params = {
-				country,
-				serviceCode,
-				provider,
-			};
+		// apiKey is automatically added by request interceptor
+		const params = {
+			country,
+			serviceCode,
+			provider,
+		};
 
-			const response = await api.get(
-				"/order/get-number",
-				{
-					params,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/order/get-number",
+			{
+				params,
+			},
+		);
+		return response;
 	},
 
 	getMessage: async (orderId) => {
-		try {
-			const response = await api.get(
-				"/order/get-message",
-				{
-					params: {
-						orderId,
-					},
+		const response = await api.get(
+			"/order/get-message",
+			{
+				params: {
+					orderId,
 				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+			},
+		);
+		return response;
 	},
 
 	getRefundStatus: async (orderId) => {
-		try {
-			const user = JSON.parse(
-				localStorage.getItem("user") || "{}",
-			);
-			const response = await api.get(
-				"/order/refund-status",
-				{
-					params: {
-						apiKey: user.apiKey,
-						orderId,
-					},
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
+		const response = await api.get(
+			"/order/refund-status",
+			{
+				params: {
+					apiKey: user.apiKey,
+					orderId,
 				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+			},
+		);
+		return response;
 	},
 
 	processRefunds: async () => {
-		try {
-			const user = JSON.parse(
-				localStorage.getItem("user") || "{}",
-			);
-			const response = await api.get(
-				"/order/process-refunds",
-				{
-					params: {
-						apiKey: user.apiKey,
-					},
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
+		const response = await api.get(
+			"/order/process-refunds",
+			{
+				params: {
+					apiKey: user.apiKey,
 				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+			},
+		);
+		return response;
 	},
 
 	getRefundEligible: async () => {
-		try {
-			const user = JSON.parse(
-				localStorage.getItem("user") || "{}",
-			);
-			const response = await api.get(
-				"/order/refund-eligible",
-				{
-					params: {
-						apiKey: user.apiKey,
-					},
+		const user = JSON.parse(
+			localStorage.getItem("user") || "{}",
+		);
+		const response = await api.get(
+			"/order/refund-eligible",
+			{
+				params: {
+					apiKey: user.apiKey,
 				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+			},
+		);
+		return response;
 	},
 
 	// Email ordering APIs
 	getEmailSites: async () => {
-		try {
-			const response = await api.get(
-				"/email/sites",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email/sites",
+		);
+		return response;
 	},
 
 	getEmailDomains: async () => {
-		try {
-			const response = await api.get(
-				"/email/domains",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email/domains",
+		);
+		return response;
 	},
 
 	getEmailQuantity: async (
 		site,
 		domain = null,
 	) => {
-		try {
-			const params = { site };
-			if (domain) params.domain = domain;
-			const response = await api.get(
-				"/email/quantity",
-				{
-					params,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const params = { site };
+		if (domain) params.domain = domain;
+		const response = await api.get(
+			"/email/quantity",
+			{
+				params,
+			},
+		);
+		return response;
 	},
 
 	orderEmail: async (site, domain = null) => {
-		try {
-			const params = { site };
-			// Always include domain parameter, even if null/empty
-			// This allows backend to differentiate between "any domain" and "specific domain"
-			if (domain && domain !== "") {
-				params.domain = domain;
-			}
-			const response = await api.get(
-				"/order/get-email",
-				{
-					params,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
+		const params = { site };
+		// Always include domain parameter, even if null/empty
+		// This allows backend to differentiate between "any domain" and "specific domain"
+		if (domain && domain !== "") {
+			params.domain = domain;
 		}
+		const response = await api.get(
+			"/order/get-email",
+			{
+				params,
+			},
+		);
+		return response;
 	},
 
 	getEmailMessage: async (orderId) => {
-		try {
-			const response = await api.get(
-				"/order/get-email-message",
-				{
-					params: { orderId },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/order/get-email-message",
+			{
+				params: { orderId },
+			},
+		);
+		return response;
 	},
 
 	cancelEmail: async (orderId) => {
-		try {
-			const response = await api.get(
-				"/order/cancel-email",
-				{
-					params: { orderId },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/order/cancel-email",
+			{
+				params: { orderId },
+			},
+		);
+		return response;
 	},
 };
 
@@ -645,211 +597,147 @@ export const orderApi = {
 export const emailAdminApi = {
 	// Email Sites Management
 	getAllSites: async () => {
-		try {
-			const response = await api.get(
-				"/email-admin/sites",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/sites",
+		);
+		return response;
 	},
 
 	getSite: async (id) => {
-		try {
-			const response = await api.get(
-				`/email-admin/sites/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/email-admin/sites/${id}`,
+		);
+		return response;
 	},
 
 	createSite: async (siteData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/sites/create",
-				{
-					params: siteData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/sites/create",
+			{
+				params: siteData,
+			},
+		);
+		return response;
 	},
 
 	updateSite: async (id, siteData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/sites/update",
-				{
-					params: { id, ...siteData },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/sites/update",
+			{
+				params: { id, ...siteData },
+			},
+		);
+		return response;
 	},
 
 	deleteSite: async (id) => {
-		try {
-			const response = await api.get(
-				"/email-admin/sites/delete",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/sites/delete",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 
 	// Email Domains Management
 	getAllDomains: async () => {
-		try {
-			const response = await api.get(
-				"/email-admin/domains",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/domains",
+		);
+		return response;
 	},
 
 	getDomain: async (id) => {
-		try {
-			const response = await api.get(
-				`/email-admin/domains/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/email-admin/domains/${id}`,
+		);
+		return response;
 	},
 
 	createDomain: async (domainData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/domains/create",
-				{
-					params: domainData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/domains/create",
+			{
+				params: domainData,
+			},
+		);
+		return response;
 	},
 
 	updateDomain: async (id, domainData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/domains/update",
-				{
-					params: { id, ...domainData },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/domains/update",
+			{
+				params: { id, ...domainData },
+			},
+		);
+		return response;
 	},
 
 	deleteDomain: async (id) => {
-		try {
-			const response = await api.get(
-				"/email-admin/domains/delete",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/domains/delete",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 
 	// Email Prices Management
 	getAllPrices: async () => {
-		try {
-			const response = await api.get(
-				"/email-admin/prices",
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/prices",
+		);
+		return response;
 	},
 
 	getPrice: async (id) => {
-		try {
-			const response = await api.get(
-				`/email-admin/prices/${id}`,
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			`/email-admin/prices/${id}`,
+		);
+		return response;
 	},
 
 	createPrice: async (priceData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/prices/create",
-				{
-					params: priceData,
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/prices/create",
+			{
+				params: priceData,
+			},
+		);
+		return response;
 	},
 
 	updatePrice: async (id, priceData) => {
-		try {
-			const response = await api.get(
-				"/email-admin/prices/update",
-				{
-					params: { id, ...priceData },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/prices/update",
+			{
+				params: { id, ...priceData },
+			},
+		);
+		return response;
 	},
 
 	deletePrice: async (id) => {
-		try {
-			const response = await api.get(
-				"/email-admin/prices/delete",
-				{
-					params: { id },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/prices/delete",
+			{
+				params: { id },
+			},
+		);
+		return response;
 	},
 
 	populatePrices: async (defaultPrice = 0.5) => {
-		try {
-			const response = await api.get(
-				"/email-admin/prices/populate",
-				{
-					params: { defaultPrice },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/email-admin/prices/populate",
+			{
+				params: { defaultPrice },
+			},
+		);
+		return response;
 	},
 };
 
