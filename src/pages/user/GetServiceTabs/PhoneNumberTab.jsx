@@ -560,13 +560,8 @@ export default function PhoneNumberTab({
 											selectedServiceName
 										) {
 											const countryKey =
-						selectedCountryName?.toLowerCase();
-					const providerServices =
-						countryKey
-							? serviceOptionsByCountryProvider[countryKey]?.[
-									value
-							  ]
-							: undefined;
+												selectedCountryName?.toLowerCase();
+											const providerKey = `provider${value}`;
 											const isServiceAvailable =
 												pricing.some(
 													(p) =>

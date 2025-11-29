@@ -6,7 +6,7 @@ import {
 	Sheet,
 	SheetContent,
 } from "@/components/ui/sheet";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 export default function DashboardLayout() {
 	const [mobileMenuOpen, setMobileMenuOpen] =

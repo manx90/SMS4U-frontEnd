@@ -1,6 +1,5 @@
 import {
 	createContext,
-	useContext,
 	useState,
 	useEffect,
 	useCallback,
@@ -11,22 +10,12 @@ import { toast } from "sonner";
 
 const AuthContext = createContext(null);
 
-export const useAuth = () => {
-	const context = useContext(AuthContext);
-	if (!context) {
-		throw new Error(
-			"useAuth must be used within an AuthProvider",
-		);
-	}
-	return context;
-};
-
 // Helper function to decode JWT and get expiration
 const getTokenExpiration = (token) => {
 	try {
 		const payload = JSON.parse(atob(token.split('.')[1]));
 		return payload.exp * 1000; // Convert to milliseconds
-	} catch (error) {
+	} catch {
 		return null;
 	}
 };

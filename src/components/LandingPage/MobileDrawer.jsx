@@ -4,13 +4,11 @@ import {
 	AnimatePresence,
 } from "framer-motion";
 import { X, LogIn, UserPlus } from "lucide-react";
-import { useTheme } from "next-themes";
 import { ThemeToggle } from "../theme-toggle";
 import { useNavigate } from "react-router-dom";
 
 const MobileDrawer = memo(
 	({ isOpen, onClose }) => {
-		const { theme } = useTheme();
 		const navigate = useNavigate();
 
 		const navigationLinks = [

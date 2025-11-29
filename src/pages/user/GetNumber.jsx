@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import {
 	countryApi,
 	serviceApi,
@@ -76,36 +76,7 @@ export default function GetNumber() {
 		loadData();
 	}, []);
 
-	useEffect(() => {
-		calculatePrice();
-	}, [formData.country, formData.service]);
-
-	const loadData = async () => {
-		setLoading(true);
-		try {
-			const [
-				countriesRes,
-				servicesRes,
-				pricingRes,
-			] = await Promise.all([
-				countryApi.getAll(),
-				serviceApi.getAll(),
-				// pricingApi.getAll(),
-			]);
-			if (countriesRes.state === "200")
-				setCountries(countriesRes.data || []);
-			if (servicesRes.state === "200")
-				setServices(servicesRes.data || []);
-			if (pricingRes.state === "200")
-				setPricing(pricingRes.data || []);
-		} catch (error) {
-			toast.error(`Failed to load data: ${error.message}`);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const calculatePrice = () => {
+	const calculatePrice = useCallback(() => {
 		if (formData.country && formData.service) {
 			// Find the country and service IDs
 			const country = countries.find(
@@ -130,6 +101,35 @@ export default function GetNumber() {
 			}
 		} else {
 			setEstimatedPrice(0);
+		}
+	}, [formData.country, formData.service, countries, services, pricing]);
+
+	useEffect(() => {
+		calculatePrice();
+	}, [calculatePrice]);
+
+	const loadData = async () => {
+		setLoading(true);
+		try {
+			const [
+				countriesRes,
+				servicesRes,
+				pricingRes,
+			] = await Promise.all([
+				countryApi.getAll(),
+				serviceApi.getAll(),
+				// pricingApi.getAll(),
+			]);
+			if (countriesRes.state === "200")
+				setCountries(countriesRes.data || []);
+			if (servicesRes.state === "200")
+				setServices(servicesRes.data || []);
+			if (pricingRes.state === "200")
+				setPricing(pricingRes.data || []);
+		} catch (error) {
+			toast.error(`Failed to load data: ${error.message}`);
+		} finally {
+			setLoading(false);
 		}
 	};
 

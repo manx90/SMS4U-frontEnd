@@ -26,7 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "./theme-toggle";
 import { ThemeSelector } from "./theme-selector";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 export function Topbar({ onMenuClick }) {
 	const { user, logout } = useAuth();

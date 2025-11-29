@@ -201,31 +201,23 @@ api.interceptors.response.use(
 // ==================== Auth APIs ====================
 export const authApi = {
 	login: async (name, password) => {
-		try {
-			const response = await api.get(
-				"/auth/login",
-				{
-					params: { name, password },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/auth/login",
+			{
+				params: { name, password },
+			},
+		);
+		return response;
 	},
 
 	register: async (name, email, password) => {
-		try {
-			const response = await api.get(
-				"/auth/register",
-				{
-					params: { name, email, password },
-				},
-			);
-			return response;
-		} catch (error) {
-			throw error;
-		}
+		const response = await api.get(
+			"/auth/register",
+			{
+				params: { name, email, password },
+			},
+		);
+		return response;
 	},
 
 	loginWithKey: async (apiKey) => {

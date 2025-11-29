@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { orderApi } from "../../services/api";
 import {
 	Card,
@@ -34,11 +34,7 @@ export default function UserDashboard() {
 		completedOrders: 0,
 	});
 
-	useEffect(() => {
-		loadOrders();
-	}, []);
-
-	const loadOrders = async () => {
+	const loadOrders = useCallback(async () => {
 		setLoading(true);
 		try {
 			const response = await orderApi.getAll(
@@ -65,7 +61,11 @@ export default function UserDashboard() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [user.apiKey]);
+
+	useEffect(() => {
+		loadOrders();
+	}, [loadOrders]);
 
 	const statsCards = [
 		{
