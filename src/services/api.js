@@ -4,7 +4,7 @@ import axios from "axios";
 const api = axios.create({
 	baseURL:
 		import.meta.env.VITE_API_BASE_URL ||
-		"http://176.118.198.153:3000/api/v1",
+		"https://api.sms4u.pro/api/v1",
 	timeout: 30000,
 	headers: {
 		"Content-Type": "application/json",
@@ -126,7 +126,7 @@ api.interceptors.response.use(
 					const response = await axios.post(
 						`${
 							import.meta.env.VITE_API_BASE_URL ||
-							"http://176.118.198.153:3000/api/v1"
+							"https://api.sms4u.pro/api/v1"
 						}/auth/refresh-token`,
 						{ refreshToken },
 					);
@@ -234,7 +234,7 @@ export const authApi = {
 		const response = await axios.post(
 			`${
 				import.meta.env.VITE_API_BASE_URL ||
-				"http://176.118.198.153:3000/api/v1"
+				"https://api.sms4u.pro/api/v1"
 			}/auth/refresh-token`,
 			{ refreshToken },
 		);
