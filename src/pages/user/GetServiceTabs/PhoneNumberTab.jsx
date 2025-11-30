@@ -3,6 +3,7 @@ import {
 	useEffect,
 	useMemo,
 } from "react";
+import { Link } from "react-router-dom";
 import { orderApi } from "../../../services/api";
 import {
 	Card,
@@ -653,6 +654,18 @@ export default function PhoneNumberTab({
 									</>
 								)}
 							</Button>
+							
+							<div className="text-center">
+								<Button
+									variant="outline"
+									className="w-full"
+									asChild
+								>
+									<Link to="/user/account">
+										Add Funds
+									</Link>
+								</Button>
+							</div>
 						</form>
 					</CardContent>
 				</Card>
