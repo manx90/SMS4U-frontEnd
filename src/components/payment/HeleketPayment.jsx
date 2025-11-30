@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 
 export default function HeleketPayment() {
-	const { user, updateUserBalance } = useAuth();
+	const { user, updateUserBalance, refreshUserData } = useAuth();
 	const [amount, setAmount] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [invoice, setInvoice] = useState(null);
@@ -109,11 +109,11 @@ export default function HeleketPayment() {
 				0;
 
 			// Note: Balance is automatically updated by Backend webhook when payment is confirmed
-			// We just need to refresh user data to show updated balance
-			// The webhook will handle the actual balance update
+			// Refresh user data from server to show updated balance
+			await refreshUserData();
 			
 			toast.success(
-				`Payment successful! ${paidAmount.toFixed(2)} RUB will be added to your balance automatically.`,
+				`Payment successful! ${paidAmount.toFixed(2)} RUB has been added to your balance.`,
 			);
 
 			// Stop polling
@@ -124,8 +124,14 @@ export default function HeleketPayment() {
 			}
 		} catch (error) {
 			console.error("Error handling payment success:", error);
+			// Try to refresh user data anyway
+			try {
+				await refreshUserData();
+			} catch (refreshError) {
+				console.error("Error refreshing user data:", refreshError);
+			}
 			toast.success(
-				"Payment successful! Your balance will be updated automatically.",
+				"Payment successful! Your balance has been updated.",
 			);
 		}
 	};

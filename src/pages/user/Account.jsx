@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useSearchParams } from "react-router-dom";
 import {
 	Card,
 	CardContent,
@@ -35,13 +36,26 @@ import {
 } from "lucide-react";
 
 export default function Account() {
-	const { user } = useAuth();
+	const { user, refreshUserData } = useAuth();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [passwordData, setPasswordData] =
 		useState({
 			currentPassword: "",
 			newPassword: "",
 			confirmPassword: "",
 		});
+
+	// Refresh user data when returning from payment (payment=success in URL)
+	useEffect(() => {
+		const paymentSuccess = searchParams.get("payment");
+		if (paymentSuccess === "success") {
+			// Refresh user data to get updated balance
+			refreshUserData();
+			// Remove the query parameter from URL
+			searchParams.delete("payment");
+			setSearchParams(searchParams, { replace: true });
+		}
+	}, [searchParams, setSearchParams, refreshUserData]);
 
 	const handlePasswordChange = (e) => {
 		e.preventDefault();
