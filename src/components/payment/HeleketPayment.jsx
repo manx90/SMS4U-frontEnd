@@ -417,7 +417,7 @@ export default function HeleketPayment() {
 										Invoice Amount
 									</p>
 									<p className="text-2xl font-bold">
-										{invoice.amount} {invoice.currency}
+										{invoice.amount} USDT
 									</p>
 								</div>
 								{invoice.payer_amount && (

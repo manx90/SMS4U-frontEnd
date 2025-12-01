@@ -18,6 +18,7 @@ import {
 	Globe2,
 	Zap,
 	Book,
+	CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const routePrefetchMap = {
 	"/admin/countries": () => import("../pages/admin/Countries"),
 	"/admin/pricing": () => import("../pages/admin/Pricing"),
 	"/admin/orders": () => import("../pages/admin/Orders"),
+	"/admin/payments": () => import("../pages/admin/Payments"),
 	"/admin/email-sites": () => import("../pages/admin/EmailSites"),
 	"/admin/email-domains": () => import("../pages/admin/EmailDomains"),
 	"/admin/email-prices": () => import("../pages/admin/EmailPrices"),
@@ -105,6 +107,11 @@ const adminNavItems = [
 		name: "Orders",
 		icon: ShoppingCart,
 		path: "/admin/orders",
+	},
+	{
+		name: "Payments",
+		icon: CreditCard,
+		path: "/admin/payments",
 	},
 ];
 

@@ -49,6 +49,9 @@ const EmailDomains = lazy(() =>
 const EmailPrices = lazy(() =>
 	import("./pages/admin/EmailPrices"),
 );
+const Payments = lazy(() =>
+	import("./pages/admin/Payments"),
+);
 
 // User Pages - Lazy loaded
 const UserDashboard = lazy(() =>
@@ -154,6 +157,10 @@ function App() {
 								<Route
 									path="orders"
 									element={<AdminOrders />}
+								/>
+								<Route
+									path="payments"
+									element={<Payments />}
 								/>
 							</Route>
 

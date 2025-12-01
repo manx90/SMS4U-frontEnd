@@ -61,6 +61,15 @@ export const heleketPaymentApi = {
 	getPaymentInfo: async (uuid) => {
 		return await heleketPaymentApi.getPaymentStatus(uuid);
 	},
+
+	/**
+	 * Get all payment invoices (Admin only)
+	 * @returns {Promise} All payment invoices
+	 */
+	getAllPayments: async () => {
+		const response = await api.get("/payment/heleket/all");
+		return response;
+	},
 };
 
 // Keep default export for backward compatibility
