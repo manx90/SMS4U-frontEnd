@@ -38,5 +38,8 @@ build
 *.backup
 dist.backup.*
 
+# Markdown files
+*.md
+
 
 
