@@ -15,13 +15,14 @@ export const heleketPaymentApi = {
 			localStorage.getItem("user") || "{}",
 		);
 		const baseUrl = window.location.origin;
-		
+
 		const response = await api.post(
 			"/payment/heleket/create-invoice",
 			{
 				amount: String(amount),
 				orderId,
 				userId: user?.id,
+				currency: "USDT",
 				urlReturn:
 					options.urlReturn ||
 					`${baseUrl}/user/account`,
@@ -32,7 +33,7 @@ export const heleketPaymentApi = {
 				additionalData: options.additionalData || null,
 			},
 		);
-		
+
 		// Backend returns { state: "200", result: {...}, data: {...} }
 		// Return in format expected by Frontend
 		return response;
@@ -47,7 +48,7 @@ export const heleketPaymentApi = {
 		const response = await api.get(
 			`/payment/heleket/status/${uuid}`,
 		);
-		
+
 		// Backend returns { state: "200", result: {...}, data: {...} }
 		return response;
 	},
