@@ -383,8 +383,10 @@ export const countryApi = {
 
 // ==================== Pricing APIs ====================
 export const pricingApi = {
-	getAll: async () => {
-		const response = await api.get("/pricing/");
+	getAll: async (page = 1, limit = 50) => {
+		const response = await api.get("/pricing/", {
+			params: { page, limit },
+		});
 		return response;
 	},
 

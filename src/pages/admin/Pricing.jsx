@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import {
 	pricingApi,
 	countryApi,
@@ -35,6 +35,15 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+	PaginationEllipsis,
+} from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmDialog } from "../../components/shared/DeleteConfirmDialog";
 import {
@@ -42,6 +51,7 @@ import {
 	Edit,
 	Trash2,
 	DollarSign,
+	Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,9 +74,48 @@ export default function Pricing() {
 		provider2: "",
 	});
 
+	// Pagination state
+	const [page, setPage] = useState(1);
+	const [limit] = useState(50);
+	const [total, setTotal] = useState(0);
+	const [totalPages, setTotalPages] = useState(0);
+
+	// Search state
+	const [searchQuery, setSearchQuery] = useState("");
+	const [filteredPricing, setFilteredPricing] = useState([]);
+
 	useEffect(() => {
 		loadData();
-	}, []);
+	}, [page]);
+
+	// Filter pricing based on search query
+	useEffect(() => {
+		if (!searchQuery.trim()) {
+			setFilteredPricing(pricing);
+			return;
+		}
+
+		const query = searchQuery.toLowerCase().trim();
+		const filtered = pricing.filter((item) => {
+			const countryName = item.country?.name?.toLowerCase() || "";
+			const serviceName = item.service?.name?.toLowerCase() || "";
+			const provider1 = String(item.provider1 || "").toLowerCase();
+			const provider2 = String(item.provider2 || "").toLowerCase();
+
+			return (
+				countryName.includes(query) ||
+				serviceName.includes(query) ||
+				provider1.includes(query) ||
+				provider2.includes(query)
+			);
+		});
+
+		setFilteredPricing(filtered);
+		// Reset to page 1 when searching
+		if (searchQuery && page !== 1) {
+			setPage(1);
+		}
+	}, [searchQuery, pricing]);
 
 	const loadData = async () => {
 		setLoading(true);
@@ -76,7 +125,7 @@ export default function Pricing() {
 				countriesRes,
 				servicesRes,
 			] = await Promise.all([
-				pricingApi.getAll(),
+				pricingApi.getAll(page, limit),
 				countryApi.getAll(),
 				serviceApi.getAll(),
 			]);
@@ -94,8 +143,15 @@ export default function Pricing() {
 				servicesRes,
 			);
 
-			if (pricingRes.state === "200")
-				setPricing(pricingRes.data || []);
+			if (pricingRes.state === "200") {
+				const pricingData = pricingRes.data || [];
+				setPricing(pricingData);
+				setFilteredPricing(pricingData);
+				if (pricingRes.pagination) {
+					setTotal(pricingRes.pagination.total || 0);
+					setTotalPages(pricingRes.pagination.totalPages || 0);
+				}
+			}
 			if (countriesRes.state === "200")
 				setCountries(countriesRes.data || []);
 			if (servicesRes.state === "200")
@@ -202,12 +258,49 @@ export default function Pricing() {
 				</Button>
 			</div>
 
+			{/* Search Bar */}
+			<Card className="glass-card border-primary/10">
+				<CardContent className="pt-6">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							placeholder="Search by country, service, or price..."
+							value={searchQuery}
+							onChange={(e) =>
+								setSearchQuery(e.target.value)
+							}
+							className="pl-10"
+						/>
+					</div>
+				</CardContent>
+			</Card>
+
 			<Card className="glass-card border-primary/10">
 				<CardHeader>
 					<CardTitle>
 						All Pricing Configurations (
-						{pricing.length})
+						{searchQuery
+							? filteredPricing.length
+							: total}
+						)
 					</CardTitle>
+					{searchQuery ? (
+						<p className="text-sm text-muted-foreground mt-1">
+							Found {filteredPricing.length} result
+							{filteredPricing.length !== 1
+								? "s"
+								: ""}{" "}
+							for "{searchQuery}"
+						</p>
+					) : (
+						total > 0 && (
+							<p className="text-sm text-muted-foreground mt-1">
+								Showing {((page - 1) * limit) + 1} to{" "}
+								{Math.min(page * limit, total)} of {total}{" "}
+								results
+							</p>
+						)
+					)}
 				</CardHeader>
 				<CardContent>
 					<Table>
@@ -227,53 +320,158 @@ export default function Pricing() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{pricing.map((item) => (
-								<TableRow
-									key={item.id}
-									className="hover:bg-muted/50"
-								>
-									<TableCell className="font-semibold">
-										{item.country?.name || "N/A"}
-									</TableCell>
-									<TableCell>
-										{item.service?.name || "N/A"}
-									</TableCell>
-									<TableCell>
-										<code className="  px-2 py-1 rounded flex items-center gap-1">
-											<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-											{item.provider1}
-										</code>
-									</TableCell>
-									<TableCell>
-										<code className=" px-2 py-1 rounded flex items-center gap-1">
-											<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-											{item.provider2}
-										</code>
-									</TableCell>
-									<TableCell className="text-right space-x-2">
-										<Button
-											size="sm"
-											variant="outline"
-											onClick={() =>
-												handleEdit(item)
-											}
-										>
-											<Edit className="h-3.5 w-3.5" />
-										</Button>
-										<Button
-											size="sm"
-											variant="destructive"
-											onClick={() =>
-												handleDelete(item)
-											}
-										>
-											<Trash2 className="h-3.5 w-3.5" />
-										</Button>
+							{filteredPricing.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={5}
+										className="text-center py-8 text-muted-foreground"
+									>
+										{searchQuery
+											? `No results found for "${searchQuery}"`
+											: "No pricing configurations found"}
 									</TableCell>
 								</TableRow>
-							))}
+							) : (
+								filteredPricing.map((item) => (
+									<TableRow
+										key={item.id}
+										className="hover:bg-muted/50"
+									>
+										<TableCell className="font-semibold">
+											{item.country?.name || "N/A"}
+										</TableCell>
+										<TableCell>
+											{item.service?.name || "N/A"}
+										</TableCell>
+										<TableCell>
+											<code className="  px-2 py-1 rounded flex items-center gap-1">
+												<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+												{item.provider1}
+											</code>
+										</TableCell>
+										<TableCell>
+											<code className=" px-2 py-1 rounded flex items-center gap-1">
+												<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+												{item.provider2}
+											</code>
+										</TableCell>
+										<TableCell className="text-right space-x-2">
+											<Button
+												size="sm"
+												variant="outline"
+												onClick={() =>
+													handleEdit(item)
+												}
+											>
+												<Edit className="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												size="sm"
+												variant="destructive"
+												onClick={() =>
+													handleDelete(item)
+												}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</TableCell>
+									</TableRow>
+								))
+							)}
 						</TableBody>
 					</Table>
+					{!searchQuery && totalPages > 1 && (
+						<div className="mt-4 flex justify-center">
+							<Pagination>
+								<PaginationContent>
+									<PaginationItem>
+										<PaginationPrevious
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												if (page > 1) {
+													setPage(page - 1);
+												}
+											}}
+											className={
+												page === 1
+													? "pointer-events-none opacity-50"
+													: "cursor-pointer"
+											}
+										/>
+									</PaginationItem>
+									{Array.from(
+										{ length: totalPages },
+										(_, i) => i + 1,
+									)
+										.filter((p) => {
+											// Show first page, last page, current page, and pages around current
+											if (totalPages <= 7) return true;
+											if (p === 1 || p === totalPages)
+												return true;
+											if (
+												Math.abs(p - page) <= 1
+											)
+												return true;
+											return false;
+										})
+										.map((p, index, array) => {
+											// Add ellipsis if there's a gap
+											const showEllipsisBefore =
+												index > 0 &&
+												array[index - 1] <
+													p - 1;
+											return (
+												<Fragment
+													key={p}
+												>
+													{showEllipsisBefore && (
+														<PaginationItem>
+															<PaginationEllipsis />
+														</PaginationItem>
+													)}
+													<PaginationItem>
+														<PaginationLink
+															href="#"
+															isActive={
+																page === p
+															}
+															onClick={(
+																e,
+															) => {
+																e.preventDefault();
+																setPage(p);
+															}}
+															className="cursor-pointer"
+														>
+															{p}
+														</PaginationLink>
+													</PaginationItem>
+												</Fragment>
+											);
+										})}
+									<PaginationItem>
+										<PaginationNext
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												if (
+													page < totalPages
+												) {
+													setPage(page + 1);
+												}
+											}}
+											className={
+												page === totalPages
+													? "pointer-events-none opacity-50"
+													: "cursor-pointer"
+											}
+										/>
+									</PaginationItem>
+								</PaginationContent>
+							</Pagination>
+						</div>
+					)}
 				</CardContent>
 			</Card>
 
