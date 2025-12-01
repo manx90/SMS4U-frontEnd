@@ -39,8 +39,23 @@ import {
 	Globe,
 	Package,
 	RefreshCw,
-	X,
+	Check,
+	ChevronsUpDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 
 export default function PhoneNumberTab({
@@ -50,6 +65,7 @@ export default function PhoneNumberTab({
 	// loading,
 	updateUserBalance,
 }) {
+	const [open, setOpen] = useState(false);
 	const [submitting, setSubmitting] =
 		useState(false);
 	const [activeOrders, setActiveOrders] =
@@ -125,7 +141,7 @@ export default function PhoneNumberTab({
 
 		const providerSet =
 			serviceOptionsByCountryProvider[countryKey]?.[
-				formData.provider
+			formData.provider
 			];
 
 		return providerSet ? Array.from(providerSet) : [];
@@ -238,10 +254,10 @@ export default function PhoneNumberTab({
 					prevOrders.map((order) =>
 						order.orderId === orderId
 							? {
-									...order,
-									message: response.data,
-									status: "received",
-							  }
+								...order,
+								message: response.data,
+								status: "received",
+							}
 							: order,
 					),
 				);
@@ -446,36 +462,69 @@ export default function PhoneNumberTab({
 									<Globe className="h-4 w-4" />
 									Country *
 								</Label>
-								<Select
-									value={formData.countryId}
-									onValueChange={(value) =>
-										setFormData({
-											...formData,
-											countryId: value,
-											serviceId: "",
-										})
-									}
-								>
-									<SelectTrigger id="country">
-										<SelectValue placeholder="Select a country first" />
-									</SelectTrigger>
-									<SelectContent>
-										{countries.length === 0 ? (
-											<div className="px-2 py-6 text-center text-sm text-muted-foreground">
-												No countries available
-											</div>
-										) : (
-											countries.map((country) => (
-												<SelectItem
-													key={country.name}
-													value={country.name}
-												>
-													{country.name}
-												</SelectItem>
-											))
-										)}
-									</SelectContent>
-								</Select>
+								<Popover open={open} onOpenChange={setOpen}>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											role="combobox"
+											aria-expanded={open}
+											className="w-full justify-between"
+										>
+											{formData.countryId
+												? countries.find(
+													(country) =>
+														country.name ===
+														formData.countryId,
+												)?.name
+												: "Select a country..."}
+											<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent
+										className="w-[var(--radix-popover-trigger-width)] p-0"
+										align="start"
+									>
+										<Command>
+											<CommandInput placeholder="Search country..." className="h-9" />
+											<CommandList>
+												<CommandEmpty>
+													No country found.
+												</CommandEmpty>
+												<CommandGroup>
+													{countries.map((country) => (
+														<CommandItem
+															key={country.name}
+															value={country.name}
+															onSelect={(currentValue) => {
+																setFormData({
+																	...formData,
+																	countryId:
+																		currentValue ===
+																			formData.countryId
+																			? ""
+																			: currentValue,
+																	serviceId: "",
+																});
+																setOpen(false);
+															}}
+														>
+															<Check
+																className={cn(
+																	"mr-2 h-4 w-4",
+																	formData.countryId ===
+																		country.name
+																		? "opacity-100"
+																		: "opacity-0",
+																)}
+															/>
+															{country.name}
+														</CommandItem>
+													))}
+												</CommandGroup>
+											</CommandList>
+										</Command>
+									</PopoverContent>
+								</Popover>
 							</div>
 
 							{/* Service Selection */}
@@ -508,7 +557,7 @@ export default function PhoneNumberTab({
 									</SelectTrigger>
 									<SelectContent>
 										{availableServices.length >
-										0 ? (
+											0 ? (
 											availableServices.map(
 												(serviceName) => (
 													<SelectItem
@@ -530,7 +579,7 @@ export default function PhoneNumberTab({
 								</Select>
 								{formData.countryId &&
 									availableServices.length ===
-										0 && (
+									0 && (
 										<p className="text-xs text-destructive">
 											No services with pricing
 											available for selected
@@ -565,13 +614,13 @@ export default function PhoneNumberTab({
 												pricing.some(
 													(p) =>
 														p.country?.name?.toLowerCase() ===
-															selectedCountryName.toLowerCase() &&
+														selectedCountryName.toLowerCase() &&
 														p.service?.name?.toLowerCase() ===
-															selectedServiceName.toLowerCase() &&
+														selectedServiceName.toLowerCase() &&
 														p[providerKey] !=
-															null &&
+														null &&
 														p[providerKey] !==
-															"" &&
+														"" &&
 														p[providerKey] > 0,
 												);
 
@@ -654,7 +703,7 @@ export default function PhoneNumberTab({
 									</>
 								)}
 							</Button>
-							
+
 							<div className="text-center">
 								<Button
 									variant="outline"
@@ -788,13 +837,13 @@ export default function PhoneNumberTab({
 													</div>
 													{order.status ===
 														"received" && (
-														<CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-													)}
+															<CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+														)}
 												</div>
 
 												{/* Message Display */}
 												{order.message &&
-												order.message !== "" ? (
+													order.message !== "" ? (
 													<div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg border-2 border-blue-200 dark:border-blue-800">
 														<div className="flex items-center gap-2 mb-2">
 															<CheckCircle className="h-4 w-4 text-green-600" />
@@ -837,21 +886,21 @@ export default function PhoneNumberTab({
 														}
 														disabled={
 															checkingOrderId ===
-																order.orderId ||
+															order.orderId ||
 															order.status ===
-																"received"
+															"received"
 														}
 														className="flex-1"
 														size="sm"
 													>
 														{checkingOrderId ===
-														order.orderId ? (
+															order.orderId ? (
 															<>
 																<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 																Checking...
 															</>
 														) : order.status ===
-														  "received" ? (
+															"received" ? (
 															<>
 																<CheckCircle className="mr-2 h-4 w-4" />
 																Received
