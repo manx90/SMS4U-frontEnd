@@ -47,6 +47,14 @@ export default function HeleketPayment() {
 					const statusData = response?.result || response?.data;
 
 					if (statusData) {
+						// Check if invoice has required data (url, uuid)
+						if (!statusData.url || !statusData.uuid) {
+							console.warn("Invoice missing URL or UUID, clearing...");
+							localStorage.removeItem("activePaymentInvoice");
+							setLoading(false);
+							return;
+						}
+
 						setInvoice(statusData);
 						setPaymentStatus(statusData.payment_status);
 
@@ -193,10 +201,25 @@ export default function HeleketPayment() {
 		setPaymentStatus(null);
 
 		try {
+			// Close any existing active invoice first
+			if (invoice && invoice.uuid) {
+				// Stop polling if active
+				if (pollingIntervalRef.current) {
+					clearInterval(pollingIntervalRef.current);
+					pollingIntervalRef.current = null;
+					setIsPolling(false);
+				}
+				// Clear the invoice state
+				setInvoice(null);
+				setPaymentStatus(null);
+				// Clear localStorage
+				localStorage.removeItem("activePaymentInvoice");
+			}
+
 			// Generate unique order ID
 			const orderId = `payment_${user?.id || "user"}_${Date.now()}`;
 
-			// Create invoice
+			// Create invoice (Backend will automatically close any active invoices)
 			const response = await heleketPaymentApi.createInvoice(
 				amount,
 				orderId,
@@ -210,35 +233,49 @@ export default function HeleketPayment() {
 
 			// Backend returns { state: "200", result: {...}, data: {...} }
 			if (response?.state === "200" && response?.result) {
-				setInvoice(response.result);
-				setPaymentStatus(response.result.payment_status);
+				const invoiceData = response.result;
+				
+				// Validate that invoice has required fields
+				if (!invoiceData.uuid || !invoiceData.url) {
+					throw new Error("Invalid invoice response: missing UUID or URL");
+				}
+
+				setInvoice(invoiceData);
+				setPaymentStatus(invoiceData.payment_status);
 
 				// Start polling if payment is not yet completed
 				if (
-					response.result.payment_status !== "paid" &&
-					response.result.payment_status !== "expired"
+					invoiceData.payment_status !== "paid" &&
+					invoiceData.payment_status !== "expired"
 				) {
-					startPolling(response.result.uuid);
+					startPolling(invoiceData.uuid);
 				}
 
 				// Save to localStorage
-				localStorage.setItem("activePaymentInvoice", response.result.uuid);
+				localStorage.setItem("activePaymentInvoice", invoiceData.uuid);
 
 				toast.success("Payment invoice created successfully!");
 			} else if (response?.state === "200" && response?.data) {
 				// Fallback: if result is not available, use data
-				setInvoice(response.data);
-				setPaymentStatus(response.data.payment_status);
+				const invoiceData = response.data;
+				
+				// Validate that invoice has required fields
+				if (!invoiceData.uuid || !invoiceData.url) {
+					throw new Error("Invalid invoice response: missing UUID or URL");
+				}
+
+				setInvoice(invoiceData);
+				setPaymentStatus(invoiceData.payment_status);
 
 				if (
-					response.data.payment_status !== "paid" &&
-					response.data.payment_status !== "expired"
+					invoiceData.payment_status !== "paid" &&
+					invoiceData.payment_status !== "expired"
 				) {
-					startPolling(response.data.uuid);
+					startPolling(invoiceData.uuid);
 				}
 
 				// Save to localStorage
-				localStorage.setItem("activePaymentInvoice", response.data.uuid);
+				localStorage.setItem("activePaymentInvoice", invoiceData.uuid);
 
 				toast.success("Payment invoice created successfully!");
 			} else {
