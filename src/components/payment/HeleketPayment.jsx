@@ -36,8 +36,45 @@ export default function HeleketPayment() {
 	const [isPolling, setIsPolling] = useState(false);
 	const pollingIntervalRef = useRef(null);
 
-	// Cleanup polling on unmount
+	// Restore active invoice from localStorage on mount
 	useEffect(() => {
+		const restoreInvoice = async () => {
+			const savedUuid = localStorage.getItem("activePaymentInvoice");
+			if (savedUuid) {
+				setLoading(true);
+				try {
+					const response = await heleketPaymentApi.getPaymentStatus(savedUuid);
+					const statusData = response?.result || response?.data;
+
+					if (statusData) {
+						setInvoice(statusData);
+						setPaymentStatus(statusData.payment_status);
+
+						if (
+							statusData.payment_status !== "paid" &&
+							statusData.payment_status !== "expired" &&
+							statusData.payment_status !== "failed"
+						) {
+							startPolling(statusData.uuid);
+						} else {
+							// If terminal state, clear storage
+							localStorage.removeItem("activePaymentInvoice");
+						}
+					} else {
+						// Invalid data, clear storage
+						localStorage.removeItem("activePaymentInvoice");
+					}
+				} catch (error) {
+					console.error("Error restoring invoice:", error);
+					localStorage.removeItem("activePaymentInvoice");
+				} finally {
+					setLoading(false);
+				}
+			}
+		};
+
+		restoreInvoice();
+
 		return () => {
 			if (pollingIntervalRef.current) {
 				clearInterval(pollingIntervalRef.current);
@@ -57,6 +94,8 @@ export default function HeleketPayment() {
 				pollingIntervalRef.current = null;
 				setIsPolling(false);
 			}
+			// Clear active invoice from storage
+			localStorage.removeItem("activePaymentInvoice");
 		}
 	}, [paymentStatus]);
 
@@ -75,7 +114,7 @@ export default function HeleketPayment() {
 
 				// Backend returns { state: "200", result: {...}, data: {...} }
 				const statusData = response?.result || response?.data;
-				
+
 				if (statusData) {
 					const status = statusData.payment_status;
 					setPaymentStatus(status);
@@ -99,7 +138,7 @@ export default function HeleketPayment() {
 
 	const handlePaymentSuccess = async (paymentData) => {
 		try {
-			// Calculate amount in RUB
+			// Calculate amount in USD
 			// Use merchant_amount if available (this is what user actually receives)
 			// Otherwise use payment_amount or amount
 			const paidAmount =
@@ -111,9 +150,9 @@ export default function HeleketPayment() {
 			// Note: Balance is automatically updated by Backend webhook when payment is confirmed
 			// Refresh user data from server to show updated balance
 			await refreshUserData();
-			
+
 			toast.success(
-				`Payment successful! ${paidAmount.toFixed(2)} RUB has been added to your balance.`,
+				`Payment successful! $${paidAmount.toFixed(2)} has been added to your balance.`,
 			);
 
 			// Stop polling
@@ -144,9 +183,9 @@ export default function HeleketPayment() {
 			return;
 		}
 
-		const minAmount = 0.5; // Minimum amount in RUB
+		const minAmount = 0.5; // Minimum amount in USD
 		if (parseFloat(amount) < minAmount) {
-			toast.error(`Minimum amount is ${minAmount} RUB`);
+			toast.error(`Minimum amount is $${minAmount}`);
 			return;
 		}
 
@@ -182,6 +221,9 @@ export default function HeleketPayment() {
 					startPolling(response.result.uuid);
 				}
 
+				// Save to localStorage
+				localStorage.setItem("activePaymentInvoice", response.result.uuid);
+
 				toast.success("Payment invoice created successfully!");
 			} else if (response?.state === "200" && response?.data) {
 				// Fallback: if result is not available, use data
@@ -195,6 +237,9 @@ export default function HeleketPayment() {
 					startPolling(response.data.uuid);
 				}
 
+				// Save to localStorage
+				localStorage.setItem("activePaymentInvoice", response.data.uuid);
+
 				toast.success("Payment invoice created successfully!");
 			} else {
 				throw new Error(
@@ -205,10 +250,10 @@ export default function HeleketPayment() {
 			}
 		} catch (error) {
 			console.error("Error creating invoice:", error);
-			
+
 			// Handle specific error messages
 			let errorMessage = "Failed to create payment invoice. Please try again.";
-			
+
 			if (error?.error) {
 				errorMessage = error.error;
 			} else if (error?.message) {
@@ -218,7 +263,7 @@ export default function HeleketPayment() {
 			} else if (error?.response?.data?.message) {
 				errorMessage = error.response.data.message;
 			}
-			
+
 			// Show specific message for configuration errors
 			if (errorMessage.includes("not configured") || errorMessage.includes("not configured")) {
 				toast.error("Payment service is not configured on the server. Please contact support.");
@@ -239,6 +284,7 @@ export default function HeleketPayment() {
 			pollingIntervalRef.current = null;
 		}
 		setIsPolling(false);
+		localStorage.removeItem("activePaymentInvoice");
 	};
 
 	const getStatusColor = (status) => {
@@ -289,7 +335,7 @@ export default function HeleketPayment() {
 						>
 							<div className="space-y-2">
 								<Label htmlFor="amount">
-									Amount (RUB)
+									Amount (USD)
 								</Label>
 								<Input
 									id="amount"
@@ -300,12 +346,12 @@ export default function HeleketPayment() {
 									onChange={(e) =>
 										setAmount(e.target.value)
 									}
-									placeholder="Enter amount (minimum 0.5 RUB)"
+									placeholder="Enter amount (minimum $0.50)"
 									required
 									disabled={loading}
 								/>
 								<p className="text-xs text-muted-foreground">
-									Minimum amount: 0.5 RUB
+									Minimum amount: $0.50
 								</p>
 							</div>
 
@@ -314,7 +360,7 @@ export default function HeleketPayment() {
 								<AlertDescription className="text-xs">
 									You can pay using any supported
 									cryptocurrency. The payment will be
-									converted to RUB automatically.
+									converted to USD automatically.
 								</AlertDescription>
 							</Alert>
 
