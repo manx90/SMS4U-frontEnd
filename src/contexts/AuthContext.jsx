@@ -24,10 +24,10 @@ const getTokenExpiration = (token) => {
 const shouldRefreshToken = (token) => {
 	const expiration = getTokenExpiration(token);
 	if (!expiration) return false;
-	
+
 	const now = Date.now();
 	const fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes
-	
+
 	// Refresh if token expires in less than 5 minutes
 	return (expiration - now) < fiveMinutesInMs;
 };
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
 			try {
 				console.log("Token expiring soon, refreshing...");
 				const response = await authApi.refreshToken(refreshToken);
-				
+
 				if (response?.state === "200" && response?.data) {
 					const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
 					localStorage.setItem("accessToken", newAccessToken);
@@ -91,17 +91,17 @@ export const AuthProvider = ({ children }) => {
 	useEffect(() => {
 		const savedUser = localStorage.getItem("user");
 		const accessToken = localStorage.getItem("accessToken");
-		
+
 		if (savedUser && accessToken) {
 			try {
 				const parsedUser = JSON.parse(savedUser);
-				
+
 				// Verify token is not expired
 				const expiration = getTokenExpiration(accessToken);
 				if (expiration && expiration > Date.now()) {
 					setUser(parsedUser);
 					setIsAuthenticated(true);
-					
+
 					// Check if token needs immediate refresh
 					refreshTokenIfNeeded();
 				} else {
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
 				response.data
 			) {
 				const { accessToken, refreshToken, ...userData } = response.data;
-				
+
 				// Store tokens
 				if (accessToken) {
 					localStorage.setItem("accessToken", accessToken);
@@ -156,7 +156,7 @@ export const AuthProvider = ({ children }) => {
 				if (refreshToken) {
 					localStorage.setItem("refreshToken", refreshToken);
 				}
-				
+
 				// Store user data (without tokens)
 				setUser(userData);
 				setIsAuthenticated(true);
@@ -201,7 +201,7 @@ export const AuthProvider = ({ children }) => {
 				response.data
 			) {
 				const { accessToken, refreshToken, ...userData } = response.data;
-				
+
 				// Store tokens
 				if (accessToken) {
 					localStorage.setItem("accessToken", accessToken);
@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }) => {
 				if (refreshToken) {
 					localStorage.setItem("refreshToken", refreshToken);
 				}
-				
+
 				// Store user data (without tokens)
 				setUser(userData);
 				setIsAuthenticated(true);
@@ -217,7 +217,7 @@ export const AuthProvider = ({ children }) => {
 					"user",
 					JSON.stringify(userData),
 				);
-				
+
 				toast.success(
 					"Registration successful! You are now logged in.",
 				);
@@ -260,7 +260,7 @@ export const AuthProvider = ({ children }) => {
 			} else {
 				throw new Error(
 					response.error ||
-						"Login with API key failed",
+					"Login with API key failed",
 				);
 			}
 		} catch (error) {
@@ -281,12 +281,12 @@ export const AuthProvider = ({ children }) => {
 		localStorage.removeItem("user");
 		localStorage.removeItem("accessToken");
 		localStorage.removeItem("refreshToken");
-		
+
 		// Clear the refresh interval
 		if (tokenRefreshInterval.current) {
 			clearInterval(tokenRefreshInterval.current);
 		}
-		
+
 		toast.success("Logged out successfully");
 	};
 
@@ -311,9 +311,16 @@ export const AuthProvider = ({ children }) => {
 				return;
 			}
 
-			const response = await userApi.getOne(user.id);
+			const response = await userApi.getInfo();
 			if (response?.state === "200" && response?.data) {
-				const updatedUser = response.data;
+				const freshData = response.data;
+				// Merge fresh data with existing user data to preserve fields like apiKey, role, etc.
+				// that might not be returned by the info endpoint
+				const updatedUser = {
+					...user,
+					...freshData,
+				};
+
 				setUser(updatedUser);
 				localStorage.setItem(
 					"user",

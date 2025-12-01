@@ -75,7 +75,7 @@ api.interceptors.response.use(
 			if (
 				error.response?.data?.expired ||
 				error.response?.data?.error ===
-					"Token has expired"
+				"Token has expired"
 			) {
 				if (isRefreshing) {
 					// If already refreshing, queue this request
@@ -124,9 +124,8 @@ api.interceptors.response.use(
 				try {
 					// Try to refresh the token
 					const response = await axios.post(
-						`${
-							import.meta.env.VITE_API_BASE_URL ||
-							"https://api.sms4u.pro/api/v1"
+						`${import.meta.env.VITE_API_BASE_URL ||
+						"https://api.sms4u.pro/api/v1"
 						}/auth/refresh-token`,
 						{ refreshToken },
 					);
@@ -232,9 +231,8 @@ export const authApi = {
 
 	refreshToken: async (refreshToken) => {
 		const response = await axios.post(
-			`${
-				import.meta.env.VITE_API_BASE_URL ||
-				"https://api.sms4u.pro/api/v1"
+			`${import.meta.env.VITE_API_BASE_URL ||
+			"https://api.sms4u.pro/api/v1"
 			}/auth/refresh-token`,
 			{ refreshToken },
 		);
@@ -254,6 +252,13 @@ export const userApi = {
 	getAll: async () => {
 		const response = await api.get(
 			"/users/all",
+		);
+		return response;
+	},
+
+	getInfo: async () => {
+		const response = await api.get(
+			"/users/info",
 		);
 		return response;
 	},
