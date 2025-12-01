@@ -70,9 +70,9 @@ export default function UserDashboard() {
 	const statsCards = [
 		{
 			title: "Balance",
-			value: `$${
+			value: `${
 				user?.balance?.toFixed(2) || "0.00"
-			}`,
+			} USDT`,
 			icon: Wallet,
 			color: "text-green-500",
 			bgColor: "bg-green-500/10",

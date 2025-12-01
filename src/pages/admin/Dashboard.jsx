@@ -107,7 +107,7 @@ export default function AdminDashboard() {
 		},
 		{
 			title: "Revenue",
-			value: `$${stats.totalRevenue.toFixed(2)}`,
+			value: `${stats.totalRevenue.toFixed(2)} USDT`,
 			icon: DollarSign,
 			change: "+8%",
 			changeType: "positive",
@@ -236,9 +236,9 @@ export default function AdminDashboard() {
 									</div>
 									<div className="text-right">
 										<p className="font-semibold">
-											$
 											{order.price?.toFixed(2) ||
-												"0.00"}
+												"0.00"}{" "}
+											USDT
 										</p>
 										<p className="text-xs text-muted-foreground">
 											{new Date(

@@ -138,7 +138,7 @@ export default function HeleketPayment() {
 
 	const handlePaymentSuccess = async (paymentData) => {
 		try {
-			// Calculate amount in USD
+			// Calculate amount in USDT
 			// Use merchant_amount if available (this is what user actually receives)
 			// Otherwise use payment_amount or amount
 			const paidAmount =
@@ -152,7 +152,7 @@ export default function HeleketPayment() {
 			await refreshUserData();
 
 			toast.success(
-				`Payment successful! $${paidAmount.toFixed(2)} has been added to your balance.`,
+				`Payment successful! ${paidAmount.toFixed(2)} USDT has been added to your balance.`,
 			);
 
 			// Stop polling
@@ -183,9 +183,9 @@ export default function HeleketPayment() {
 			return;
 		}
 
-		const minAmount = 0.5; // Minimum amount in USD
+		const minAmount = 0.5; // Minimum amount in USDT
 		if (parseFloat(amount) < minAmount) {
-			toast.error(`Minimum amount is $${minAmount}`);
+			toast.error(`Minimum amount is ${minAmount} USDT`);
 			return;
 		}
 
@@ -335,7 +335,7 @@ export default function HeleketPayment() {
 						>
 							<div className="space-y-2">
 								<Label htmlFor="amount">
-									Amount (USD)
+									Amount (USDT)
 								</Label>
 								<Input
 									id="amount"
@@ -346,12 +346,12 @@ export default function HeleketPayment() {
 									onChange={(e) =>
 										setAmount(e.target.value)
 									}
-									placeholder="Enter amount (minimum $0.50)"
+									placeholder="Enter amount (minimum 0.50 USDT)"
 									required
 									disabled={loading}
 								/>
 								<p className="text-xs text-muted-foreground">
-									Minimum amount: $0.50
+									Minimum amount: 0.50 USDT
 								</p>
 							</div>
 
@@ -359,8 +359,8 @@ export default function HeleketPayment() {
 								<AlertCircle className="h-4 w-4" />
 								<AlertDescription className="text-xs">
 									You can pay using any supported
-									cryptocurrency. The payment will be
-									converted to USD automatically.
+									cryptocurrency. Your balance will be
+									credited in USDT.
 								</AlertDescription>
 							</Alert>
 

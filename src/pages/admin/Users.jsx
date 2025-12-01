@@ -388,10 +388,10 @@ export default function Users() {
 													</TableCell>
 													<TableCell>
 														<div className="flex items-center gap-1 text-green-600 dark:text-green-500 font-semibold">
-															<DollarSign className="h-3.5 w-3.5" />
 															{user.balance?.toFixed(
 																2,
-															) || "0.00"}
+															) || "0.00"}{" "}
+															USDT
 														</div>
 													</TableCell>
 													<TableCell>

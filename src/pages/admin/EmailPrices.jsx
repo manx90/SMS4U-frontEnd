@@ -248,7 +248,7 @@ export default function EmailPrices() {
 						<DollarSign className="h-4 w-4 text-green-500" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">${avgPrice}</div>
+						<div className="text-2xl font-bold">{avgPrice} USDT</div>
 					</CardContent>
 				</Card>
 				<Card>
@@ -352,7 +352,7 @@ export default function EmailPrices() {
 											</TableCell>
 											<TableCell>
 												<span className="font-semibold text-green-600 dark:text-green-400">
-													${parseFloat(price.price).toFixed(2)}
+													{parseFloat(price.price).toFixed(2)} USDT
 												</span>
 											</TableCell>
 											<TableCell>

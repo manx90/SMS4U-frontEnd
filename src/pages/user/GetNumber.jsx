@@ -350,10 +350,10 @@ export default function GetNumber() {
 										<AlertCircle className="h-4 w-4" />
 										<AlertDescription>
 											Insufficient balance! You
-											need $
-											{estimatedPrice.toFixed(2)}{" "}
-											but have $
-											{user.balance.toFixed(2)}
+											need{" "}
+											{estimatedPrice.toFixed(2)} USDT{" "}
+											but have{" "}
+											{user.balance.toFixed(2)} USDT
 										</AlertDescription>
 									</Alert>
 								)}
@@ -374,8 +374,8 @@ export default function GetNumber() {
 								) : (
 									<>
 										<Phone className="mr-2 h-5 w-5" />
-										Get Number - $
-										{estimatedPrice.toFixed(2)}
+										Get Number -{" "}
+										{estimatedPrice.toFixed(2)} USDT
 									</>
 								)}
 							</Button>
@@ -398,9 +398,9 @@ export default function GetNumber() {
 										Your Balance:
 									</span>
 									<span className="font-semibold text-green-600">
-										$
 										{user?.balance?.toFixed(2) ||
-											"0.00"}
+											"0.00"}{" "}
+										USDT
 									</span>
 								</div>
 								<div className="flex justify-between text-sm">
@@ -408,7 +408,7 @@ export default function GetNumber() {
 										Estimated Cost:
 									</span>
 									<span className="font-semibold">
-										${estimatedPrice.toFixed(2)}
+										{estimatedPrice.toFixed(2)} USDT
 									</span>
 								</div>
 								{estimatedPrice > 0 && (
@@ -417,11 +417,11 @@ export default function GetNumber() {
 											Balance After:
 										</span>
 										<span className="font-semibold text-blue-600">
-											$
 											{(
 												user?.balance -
 												estimatedPrice
-											).toFixed(2)}
+											).toFixed(2)}{" "}
+											USDT
 										</span>
 									</div>
 								)}

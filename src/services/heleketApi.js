@@ -5,7 +5,7 @@ import api from "./api.js";
 export const heleketPaymentApi = {
 	/**
 	 * Create a payment invoice via Backend (solves CORS issue)
-	 * @param {string} amount - Amount in RUB
+	 * @param {string} amount - Amount in USDT
 	 * @param {string} orderId - Unique order ID
 	 * @param {object} options - Additional options
 	 * @returns {Promise} Invoice data

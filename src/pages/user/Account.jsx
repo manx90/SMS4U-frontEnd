@@ -159,10 +159,10 @@ export default function Account() {
 										Balance
 									</Label>
 									<Input
-										value={`$${
+										value={`${
 											user?.balance?.toFixed(2) ||
 											"0.00"
-										}`}
+										} USDT`}
 										disabled
 										className="font-semibold text-green-600"
 									/>
@@ -381,10 +381,10 @@ export default function Account() {
 											Current Balance
 										</p>
 										<p className="text-lg font-bold text-green-600">
-											$
 											{user?.balance?.toFixed(
 												2,
-											) || "0.00"}
+											) || "0.00"}{" "}
+											USDT
 										</p>
 									</div>
 									<div className="p-3 border rounded-lg">

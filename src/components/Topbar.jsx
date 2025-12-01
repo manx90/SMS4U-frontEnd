@@ -155,7 +155,7 @@ export function Topbar({ onMenuClick }) {
 										undefined && (
 										<div className="flex items-center gap-1 text-xs font-medium text-primary">
 											<Wallet className="h-3 w-3" />
-											${user.balance.toFixed(2)}
+											{user.balance.toFixed(2)} USDT
 										</div>
 									)}
 								</div>

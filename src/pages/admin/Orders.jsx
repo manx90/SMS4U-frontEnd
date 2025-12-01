@@ -277,7 +277,7 @@ export default function AdminOrders() {
 																: order.service?.name || "N/A"}
 														</TableCell>
 														<TableCell className="font-semibold text-green-600 dark:text-green-400">
-															${order.price?.toFixed(2) || "0.00"}
+															{order.price?.toFixed(2) || "0.00"} USDT
 														</TableCell>
 														<TableCell>
 															<StatusBadge status={order.status} />

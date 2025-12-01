@@ -456,10 +456,10 @@ export default function UserOrders() {
 																Price
 															</p>
 															<p className="font-semibold text-green-600">
-																$
 																{order.price?.toFixed(
 																	2,
-																) || "0.00"}
+																) || "0.00"}{" "}
+																USDT
 															</p>
 														</div>
 													</div>
