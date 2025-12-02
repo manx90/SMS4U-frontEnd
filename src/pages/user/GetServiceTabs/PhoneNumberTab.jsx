@@ -95,12 +95,20 @@ export default function PhoneNumberTab({
 
 			const countryKey = countryName.toLowerCase();
 			const serviceKey = serviceName.toLowerCase();
-			const provider1Price = entry.provider1
-				? parseFloat(entry.provider1)
-				: 0;
-			const provider2Price = entry.provider2
-				? parseFloat(entry.provider2)
-				: 0;
+			
+			// Parse provider prices with proper null/empty string handling
+			const provider1Price = 
+				entry.provider1 != null && 
+				entry.provider1 !== "" && 
+				!isNaN(parseFloat(entry.provider1))
+					? parseFloat(entry.provider1)
+					: 0;
+			const provider2Price = 
+				entry.provider2 != null && 
+				entry.provider2 !== "" && 
+				!isNaN(parseFloat(entry.provider2))
+					? parseFloat(entry.provider2)
+					: 0;
 
 			priceMap[`${countryKey}::${serviceKey}`] = {
 				provider1: provider1Price,
