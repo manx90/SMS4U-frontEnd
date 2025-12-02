@@ -42,18 +42,40 @@ export default function GetService() {
 			const [
 				countriesRes,
 				servicesRes,
-				pricingRes,
+				firstPageRes,
 			] = await Promise.all([
 				countryApi.getAll(),
 				serviceApi.getAll(),
-				pricingApi.getAll(),
+				pricingApi.getAll(1, 1000), // Get first page with large limit
 			]);
+			
 			if (countriesRes.state === "200")
 				setCountries(countriesRes.data || []);
 			if (servicesRes.state === "200")
 				setServices(servicesRes.data || []);
-			if (pricingRes.state === "200")
-				setPricing(pricingRes.data || []);
+			
+			if (firstPageRes.state === "200") {
+				let allPricingData = firstPageRes.data || [];
+				const pagination = firstPageRes.pagination;
+				
+				// If there are more pages, fetch them all
+				if (pagination && pagination.totalPages > 1) {
+					const remainingPages = [];
+					for (let page = 2; page <= pagination.totalPages; page++) {
+						remainingPages.push(pricingApi.getAll(page, 1000));
+					}
+					
+					const remainingResults = await Promise.all(remainingPages);
+					
+					remainingResults.forEach((result) => {
+						if (result.state === "200" && result.data) {
+							allPricingData = [...allPricingData, ...result.data];
+						}
+					});
+				}
+				
+				setPricing(allPricingData);
+			}
 		} catch (error) {
 			console.error(
 				"Failed to load data:",

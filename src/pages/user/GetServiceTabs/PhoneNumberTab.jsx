@@ -93,8 +93,8 @@ export default function PhoneNumberTab({
 
 			if (!countryName || !serviceName) return;
 
-			const countryKey = countryName.toLowerCase();
-			const serviceKey = serviceName.toLowerCase();
+			const countryKey = countryName.toLowerCase().trim();
+			const serviceKey = serviceName.toLowerCase().trim();
 			
 			// Parse provider prices with proper null/empty string handling
 			const provider1Price = 
@@ -144,7 +144,7 @@ export default function PhoneNumberTab({
 	}, [pricing]);
 
 	const availableServices = useMemo(() => {
-		const countryKey = formData.countryId?.toLowerCase();
+		const countryKey = formData.countryId?.toLowerCase()?.trim();
 		if (!countryKey) return [];
 
 		const providerSet =
