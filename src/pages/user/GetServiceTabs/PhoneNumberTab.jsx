@@ -15,13 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
 	RadioGroup,
 	RadioGroupItem,
 } from "@/components/ui/radio-group";
@@ -66,6 +59,7 @@ export default function PhoneNumberTab({
 	updateUserBalance,
 }) {
 	const [open, setOpen] = useState(false);
+	const [serviceOpen, setServiceOpen] = useState(false);
 	const [submitting, setSubmitting] =
 		useState(false);
 	const [activeOrders, setActiveOrders] =
@@ -544,47 +538,81 @@ export default function PhoneNumberTab({
 									<Package className="h-4 w-4" />
 									Service *
 								</Label>
-								<Select
-									value={formData.serviceId}
-									onValueChange={(value) =>
-										setFormData({
-											...formData,
-											serviceId: value,
-										})
-									}
-									disabled={!formData.countryId}
-								>
-									<SelectTrigger id="service">
-										<SelectValue
-											placeholder={
-												formData.countryId
-													? "Select a service"
-													: "Select country first"
-											}
-										/>
-									</SelectTrigger>
-									<SelectContent>
-										{availableServices.length >
-											0 ? (
-											availableServices.map(
-												(serviceName) => (
-													<SelectItem
-														key={serviceName}
-														value={serviceName}
-													>
-														{serviceName}
-													</SelectItem>
-												),
-											)
-										) : (
-											<div className="px-2 py-6 text-center text-sm text-muted-foreground">
-												{formData.countryId
-													? `No services available for this country with Provider ${formData.provider}`
-													: "Select a country first"}
-											</div>
-										)}
-									</SelectContent>
-								</Select>
+								<Popover open={serviceOpen} onOpenChange={setServiceOpen}>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											role="combobox"
+											aria-expanded={serviceOpen}
+											className="w-full justify-between"
+											disabled={!formData.countryId}
+										>
+											{formData.serviceId
+												? availableServices.find(
+													(service) =>
+														service ===
+														formData.serviceId,
+												)
+												: formData.countryId
+													? "Select a service..."
+													: "Select country first"}
+											<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent
+										className="w-[var(--radix-popover-trigger-width)] p-0"
+										align="start"
+									>
+										<Command>
+											<CommandInput placeholder="Search service..." className="h-9" />
+											<CommandList>
+												<CommandEmpty>
+													{formData.countryId
+														? `No services available for this country with Provider ${formData.provider}`
+														: "Select a country first"}
+												</CommandEmpty>
+												<CommandGroup>
+													{availableServices.length > 0 ? (
+														availableServices.map((serviceName) => (
+															<CommandItem
+																key={serviceName}
+																value={serviceName}
+																onSelect={(currentValue) => {
+																	setFormData({
+																		...formData,
+																		serviceId:
+																			currentValue ===
+																				formData.serviceId
+																				? ""
+																				: currentValue,
+																	});
+																	setServiceOpen(false);
+																}}
+															>
+																<Check
+																	className={cn(
+																		"mr-2 h-4 w-4",
+																		formData.serviceId ===
+																			serviceName
+																			? "opacity-100"
+																			: "opacity-0",
+																	)}
+																/>
+																{serviceName}
+															</CommandItem>
+														))
+													) : (
+														<div className="px-2 py-6 text-center text-sm text-muted-foreground">
+															{formData.countryId
+																? `No services available for this country with Provider ${formData.provider}`
+																: "Select a country first"}
+														</div>
+													)}
+												</CommandGroup>
+											</CommandList>
+										</Command>
+									</PopoverContent>
+								</Popover>
 								{formData.countryId &&
 									availableServices.length ===
 									0 && (
