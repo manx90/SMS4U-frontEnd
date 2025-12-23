@@ -476,7 +476,7 @@ export default function ApiDocs() {
 						state: "200",
 						msg: "success",
 						data: {
-							number: "+1234567890",
+							number: "1234567890",
 							orderId: "ABC123XYZ456",
 						},
 					},
@@ -543,7 +543,7 @@ export default function ApiDocs() {
 							{
 								id: 1,
 								publicId: "ABC123XYZ456",
-								number: "+1234567890",
+								number: "1234567890",
 								status: "completed",
 								message: "123456",
 								price: 1.5,
@@ -626,9 +626,9 @@ export default function ApiDocs() {
 						state: "200",
 						msg: "success",
 						data: [
-							{ name: "facebook" },
-							{ name: "instagram" },
-							{ name: "google" },
+							{ name: "facebook.com" },
+							{ name: "instagram.com" },
+							{ name: "google.com" },
 						],
 					},
 					example: `curl -X GET "${BASE_URL}/order/email-sites?apiKey=${
@@ -764,7 +764,7 @@ export default function ApiDocs() {
 					},
 					example: `curl -X GET "${BASE_URL}/order/get-email?apiKey=${
 						user?.apiKey || "your_api_key"
-					}&site=facebook&domain=gmail.com"`,
+					}&site=facebook.com&domain=gmail.com"`,
 				},
 				{
 					method: "GET",
