@@ -49,7 +49,13 @@ export default function Services() {
 		code: "",
 		provider1: "",
 		provider2: "",
+		provider3: "",
 	});
+	const [syncForm, setSyncForm] = useState({
+		serviceCode: "",
+		serviceName: "",
+	});
+	const [syncing, setSyncing] = useState(false);
 
 	useEffect(() => {
 		loadServices();
@@ -92,6 +98,7 @@ export default function Services() {
 			code: "",
 			provider1: "",
 			provider2: "",
+			provider3: "",
 		});
 		setDialogOpen(true);
 	};
@@ -104,6 +111,7 @@ export default function Services() {
 			code: service.code || "",
 			provider1: service.provider1 || "",
 			provider2: service.provider2 || "",
+			provider3: service.provider3 || "",
 		});
 		setDialogOpen(true);
 	};
@@ -153,6 +161,44 @@ export default function Services() {
 					? `Failed to update service: ${error.message}`
 					: `Failed to create service: ${error.message}`,
 			);
+		}
+	};
+
+	const handleProvider3Sync = async (e) => {
+		e.preventDefault();
+		const code = String(syncForm.serviceCode || "").trim();
+		if (!code) {
+			toast.error("Service code is required");
+			return;
+		}
+		setSyncing(true);
+		try {
+			const res = await serviceApi.provider3AccessSync({
+				serviceCode: code,
+				serviceName: syncForm.serviceName?.trim() || undefined,
+			});
+			if (res.state === "200") {
+				const n = res.data?.rowsInserted;
+				toast.success(
+					typeof n === "number"
+						? `Synced ${n} operator rows`
+						: "Provider 3 access sync completed",
+				);
+			} else {
+				toast.error(
+					res.error ||
+						res.msg ||
+						"Sync failed",
+				);
+			}
+		} catch (err) {
+			toast.error(
+				err?.error ||
+					err?.message ||
+					"Sync failed",
+			);
+		} finally {
+			setSyncing(false);
 		}
 	};
 
@@ -249,6 +295,14 @@ export default function Services() {
 										{service.provider2 || "N/A"}
 									</code>
 								</div>
+								<div className="flex items-center justify-between text-sm">
+									<span className="text-muted-foreground">
+										Provider 3:
+									</span>
+									<code className="bg-muted px-2 py-1 rounded text-xs max-w-[140px] truncate">
+										{service.provider3 || "N/A"}
+									</code>
+								</div>
 							</div>
 							<div className="flex gap-2 pt-2">
 								<Button
@@ -278,6 +332,66 @@ export default function Services() {
 					</Card>
 				))}
 			</div>
+
+			<Card className="glass-card border-primary/10">
+				<CardHeader>
+					<CardTitle className="text-lg">
+						Provider 3 — access sync
+					</CardTitle>
+					<CardDescription>
+						Fetch operator and country data from the third
+						provider and store it so users can choose an
+						operator when ordering. Run this after configuring
+						the backend env and service codes.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<form
+						onSubmit={handleProvider3Sync}
+						className="flex flex-col gap-4 sm:flex-row sm:items-end"
+					>
+						<div className="space-y-2 flex-1 min-w-0">
+							<Label htmlFor="p3-sync-code">
+								Service code *
+							</Label>
+							<Input
+								id="p3-sync-code"
+								value={syncForm.serviceCode}
+								onChange={(e) =>
+									setSyncForm({
+										...syncForm,
+										serviceCode: e.target.value,
+									})
+								}
+								placeholder="e.g. tg, wa"
+							/>
+						</div>
+						<div className="space-y-2 flex-1 min-w-0">
+							<Label htmlFor="p3-sync-name">
+								Override API name (optional)
+							</Label>
+							<Input
+								id="p3-sync-name"
+								value={syncForm.serviceName}
+								onChange={(e) =>
+									setSyncForm({
+										...syncForm,
+										serviceName: e.target.value,
+									})
+								}
+								placeholder="Defaults to service name / provider3"
+							/>
+						</div>
+						<Button
+							type="submit"
+							disabled={syncing}
+							className="sm:mb-0.5"
+						>
+							{syncing ? "Syncing…" : "Run sync"}
+						</Button>
+					</form>
+				</CardContent>
+			</Card>
 
 			<Dialog
 				open={dialogOpen}
@@ -364,6 +478,23 @@ export default function Services() {
 											provider2: e.target.value,
 										})
 									}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="provider3">
+									Provider 3 API name
+								</Label>
+								<Input
+									id="provider3"
+									name="provider3"
+									value={formData.provider3}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											provider3: e.target.value,
+										})
+									}
+									placeholder="Accessinfo / API service name (optional)"
 								/>
 							</div>
 						</div>

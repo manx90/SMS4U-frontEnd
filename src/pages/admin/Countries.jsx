@@ -51,6 +51,7 @@ export default function Countries() {
 		code_country: "",
 		provider1: "",
 		provider2: "",
+		provider3: "",
 	});
 
 	useEffect(() => {
@@ -91,6 +92,21 @@ export default function Countries() {
 			code_country: "",
 			provider1: "",
 			provider2: "",
+			provider3: "",
+		});
+		setDialogOpen(true);
+	};
+
+	const handleEdit = (country) => {
+		setSelected(country);
+		setFormData({
+			country: country.name ?? "",
+			code_country: country.code_country ?? "",
+			provider1: String(country.provider1 ?? ""),
+			provider2: String(country.provider2 ?? ""),
+			provider3: country.provider3
+				? String(country.provider3)
+				: "",
 		});
 		setDialogOpen(true);
 	};
@@ -116,14 +132,29 @@ export default function Countries() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			await countryApi.create(formData);
-			toast.success(
-				"Country created successfully",
-			);
+			if (selected?.id != null) {
+				await countryApi.update({
+					id: selected.id,
+					...formData,
+				});
+				toast.success(
+					"Country updated successfully",
+				);
+			} else {
+				await countryApi.create(formData);
+				toast.success(
+					"Country created successfully",
+				);
+			}
 			setDialogOpen(false);
+			setSelected(null);
 			loadCountries();
 		} catch (error) {
-			toast.error(`Failed to create country: ${error.message}`);
+			toast.error(
+				selected?.id != null
+					? `Failed to update country: ${error.message}`
+					: `Failed to create country: ${error.message}`,
+			);
 		}
 	};
 
@@ -180,6 +211,7 @@ export default function Countries() {
 								<TableHead>Code</TableHead>
 								<TableHead>Provider 1</TableHead>
 								<TableHead>Provider 2</TableHead>
+								<TableHead>Provider 3 (ISO)</TableHead>
 								<TableHead className="text-right">
 									Actions
 								</TableHead>
@@ -214,16 +246,32 @@ export default function Countries() {
 											{country.provider2}
 										</code>
 									</TableCell>
+									<TableCell>
+										<code className="text-xs bg-muted px-2 py-1 rounded">
+											{country.provider3 || "—"}
+										</code>
+									</TableCell>
 									<TableCell className="text-right">
-										<Button
-											size="sm"
-											variant="destructive"
-											onClick={() =>
-												handleDelete(country)
-											}
-										>
-											<Trash2 className="h-3.5 w-3.5" />
-										</Button>
+										<div className="flex justify-end gap-2">
+											<Button
+												size="sm"
+												variant="outline"
+												onClick={() =>
+													handleEdit(country)
+												}
+											>
+												<Edit className="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												size="sm"
+												variant="destructive"
+												onClick={() =>
+													handleDelete(country)
+												}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</div>
 									</TableCell>
 								</TableRow>
 							))}
@@ -234,13 +282,18 @@ export default function Countries() {
 
 			<Dialog
 				open={dialogOpen}
-				onOpenChange={setDialogOpen}
+				onOpenChange={(open) => {
+					setDialogOpen(open);
+					if (!open) setSelected(null);
+				}}
 			>
 				<DialogContent>
 					<form onSubmit={handleSubmit}>
 						<DialogHeader>
 							<DialogTitle>
-								Create Country
+								{selected?.id != null
+									? "Edit Country"
+									: "Create Country"}
 							</DialogTitle>
 						</DialogHeader>
 						<div className="space-y-4 py-4">
@@ -298,6 +351,25 @@ export default function Countries() {
 									required
 								/>
 							</div>
+							<div className="space-y-2">
+								<Label>
+									Provider 3 country code (ISO)
+								</Label>
+								<Input
+									value={formData.provider3}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											provider3: e.target.value,
+										})
+									}
+									placeholder="e.g. IT, US (optional)"
+								/>
+								<p className="text-xs text-muted-foreground">
+									Used by the third SMS provider API.
+									Leave empty if unused.
+								</p>
+							</div>
 						</div>
 						<DialogFooter>
 							<Button
@@ -310,7 +382,9 @@ export default function Countries() {
 								Cancel
 							</Button>
 							<Button type="submit">
-								Create
+								{selected?.id != null
+									? "Save changes"
+									: "Create"}
 							</Button>
 						</DialogFooter>
 					</form>

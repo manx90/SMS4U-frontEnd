@@ -468,8 +468,17 @@ export default function ApiDocs() {
 							name: "provider",
 							type: "string",
 							required: true,
-							description: "Provider (1 or 2)",
+							description:
+								"Provider: 1, 2, or 3",
 							example: "1",
+						},
+						{
+							name: "operator",
+							type: "string",
+							required: false,
+							description:
+								"Required when provider is 3 (operator id from provider access data)",
+							example: "op3410",
 						},
 					],
 					response: {

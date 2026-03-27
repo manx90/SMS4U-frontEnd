@@ -4,7 +4,11 @@ import {
 	useMemo,
 } from "react";
 import { Link } from "react-router-dom";
-import { orderApi } from "../../../services/api";
+import {
+	orderApi,
+	serviceApi,
+	pricingApi,
+} from "../../../services/api";
 import {
 	Card,
 	CardContent,
@@ -49,13 +53,50 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+
+/** Prefer API codes so pricing matches countries/services even if names differ. */
+function countryKeyFromEntry(entry) {
+	const c =
+		entry?.country?.code ?? entry?.country?.code_country;
+	if (c != null && String(c).trim() !== "")
+		return String(c).trim().toLowerCase();
+	return String(entry?.country?.name || "")
+		.toLowerCase()
+		.trim();
+}
+
+function serviceKeyFromEntry(entry) {
+	const c = entry?.service?.code;
+	if (c != null && String(c).trim() !== "")
+		return String(c).trim().toLowerCase();
+	return String(entry?.service?.name || "")
+		.toLowerCase()
+		.trim();
+}
+
+/** Key used in the form for the selected country row. */
+function countryFormKey(country) {
+	if (!country) return "";
+	const c = country.code ?? country.code_country;
+	if (c != null && String(c).trim() !== "")
+		return String(c).trim().toLowerCase();
+	return String(country.name || "")
+		.toLowerCase()
+		.trim();
+}
 
 export default function PhoneNumberTab({
 	user,
 	countries,
-	pricing,
-	// loading,
+	loading,
 	updateUserBalance,
 }) {
 	const [open, setOpen] = useState(false);
@@ -70,43 +111,119 @@ export default function PhoneNumberTab({
 		countryId: "",
 		serviceId: "",
 		provider: "1",
+		operator: "",
 	});
 	const [estimatedPrice, setEstimatedPrice] =
 		useState(0);
+	const [operatorOptions, setOperatorOptions] =
+		useState([]);
+	const [loadingOperators, setLoadingOperators] =
+		useState(false);
+	const [countryPricing, setCountryPricing] =
+		useState([]);
+	const [pricingLoading, setPricingLoading] =
+		useState(false);
+
+	// Load pricing for the selected country only (GET /pricing/country/:id)
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadCountryPricing() {
+			if (!formData.countryId) {
+				setCountryPricing([]);
+				setPricingLoading(false);
+				return;
+			}
+
+			const countryRow = countries.find(
+				(c) =>
+					countryFormKey(c) === formData.countryId,
+			);
+			const countryDbId = countryRow?.id;
+			if (countryDbId == null) {
+				setCountryPricing([]);
+				setPricingLoading(false);
+				return;
+			}
+
+			setPricingLoading(true);
+			try {
+				const res = await pricingApi.getByCountry(
+					countryDbId,
+				);
+				if (cancelled) return;
+				if (
+					res.state === "200" &&
+					Array.isArray(res.data)
+				) {
+					setCountryPricing(res.data);
+				} else {
+					setCountryPricing([]);
+				}
+			} catch {
+				if (!cancelled) setCountryPricing([]);
+			} finally {
+				if (!cancelled) setPricingLoading(false);
+			}
+		}
+
+		loadCountryPricing();
+		return () => {
+			cancelled = true;
+		};
+	}, [formData.countryId, countries]);
 
 	const {
 		serviceOptionsByCountryProvider,
 		pricingByCountryService,
+		serviceDisplayNameByKey,
+		countryDisplayNameByKey,
 	} = useMemo(() => {
 		const countryProviderMap = {};
 		const priceMap = {};
+		const serviceDisplayNameByKey = {};
+		const countryDisplayNameByKey = {};
 
-		pricing.forEach((entry) => {
-			const countryName = entry.country?.name;
-			const serviceName = entry.service?.name;
+		countryPricing.forEach((entry) => {
+			const countryKey = countryKeyFromEntry(entry);
+			const serviceKey = serviceKeyFromEntry(entry);
 
-			if (!countryName || !serviceName) return;
+			if (!countryKey || !serviceKey) return;
 
-			const countryKey = countryName.toLowerCase().trim();
-			const serviceKey = serviceName.toLowerCase().trim();
-			
+			const countryLabel =
+				entry.country?.name || countryKey;
+			const serviceLabel =
+				entry.service?.name || serviceKey;
+
+			countryDisplayNameByKey[countryKey] =
+				countryLabel;
+			serviceDisplayNameByKey[serviceKey] =
+				serviceLabel;
+
 			// Parse provider prices with proper null/empty string handling
-			const provider1Price = 
-				entry.provider1 != null && 
-				entry.provider1 !== "" && 
+			const provider1Price =
+				entry.provider1 != null &&
+				entry.provider1 !== "" &&
 				!isNaN(parseFloat(entry.provider1))
 					? parseFloat(entry.provider1)
 					: 0;
-			const provider2Price = 
-				entry.provider2 != null && 
-				entry.provider2 !== "" && 
+			const provider2Price =
+				entry.provider2 != null &&
+				entry.provider2 !== "" &&
 				!isNaN(parseFloat(entry.provider2))
 					? parseFloat(entry.provider2)
+					: 0;
+			const provider3Price =
+				entry.provider3 != null &&
+				entry.provider3 !== "" &&
+				!isNaN(parseFloat(entry.provider3))
+					? parseFloat(entry.provider3)
 					: 0;
 
 			priceMap[`${countryKey}::${serviceKey}`] = {
 				provider1: provider1Price,
 				provider2: provider2Price,
+				provider3: provider3Price,
 				countryCode: entry.country?.code,
 				serviceCode: entry.service?.code,
 			};
@@ -115,18 +232,25 @@ export default function PhoneNumberTab({
 				countryProviderMap[countryKey] = {
 					"1": new Set(),
 					"2": new Set(),
+					"3": new Set(),
 				};
 			}
 
 			if (provider1Price > 0) {
 				countryProviderMap[countryKey]["1"].add(
-					serviceName,
+					serviceKey,
 				);
 			}
 
 			if (provider2Price > 0) {
 				countryProviderMap[countryKey]["2"].add(
-					serviceName,
+					serviceKey,
+				);
+			}
+
+			if (provider3Price > 0) {
+				countryProviderMap[countryKey]["3"].add(
+					serviceKey,
 				);
 			}
 		});
@@ -134,8 +258,10 @@ export default function PhoneNumberTab({
 		return {
 			serviceOptionsByCountryProvider: countryProviderMap,
 			pricingByCountryService: priceMap,
+			serviceDisplayNameByKey,
+			countryDisplayNameByKey,
 		};
-	}, [pricing]);
+	}, [countryPricing]);
 
 	const availableServices = useMemo(() => {
 		const countryKey = formData.countryId?.toLowerCase()?.trim();
@@ -146,7 +272,9 @@ export default function PhoneNumberTab({
 			formData.provider
 			];
 
-		return providerSet ? Array.from(providerSet) : [];
+		return providerSet
+			? Array.from(providerSet).sort()
+			: [];
 	}, [
 		formData.countryId,
 		formData.provider,
@@ -180,6 +308,92 @@ export default function PhoneNumberTab({
 			selectedPriceConfig[providerKey] || 0,
 		);
 	}, [selectedPriceConfig, formData.provider]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadOperators() {
+			if (
+				formData.provider !== "3" ||
+				!formData.countryId ||
+				!formData.serviceId
+			) {
+				setOperatorOptions([]);
+				return;
+			}
+
+			const countryKey =
+				formData.countryId?.toLowerCase()?.trim();
+			const serviceKey =
+				formData.serviceId?.toLowerCase()?.trim();
+			const pricingEntry =
+				countryKey && serviceKey
+					? pricingByCountryService[
+					`${countryKey}::${serviceKey}`
+					]
+					: null;
+
+			if (
+				!pricingEntry?.serviceCode ||
+				!pricingEntry?.provider3 ||
+				pricingEntry.provider3 <= 0
+			) {
+				setOperatorOptions([]);
+				return;
+			}
+
+			const countryMeta = countries.find(
+				(c) =>
+					countryFormKey(c) === formData.countryId,
+			);
+			const countryParam =
+				countryMeta?.code ??
+				countryMeta?.code_country ??
+				"";
+
+			if (!String(countryParam).trim()) {
+				setOperatorOptions([]);
+				return;
+			}
+
+			setLoadingOperators(true);
+			try {
+				const res =
+					await serviceApi.getProvider3Operators(
+						String(pricingEntry.serviceCode),
+						String(countryParam).trim(),
+					);
+				if (cancelled) return;
+				if (
+					res.state === "200" &&
+					Array.isArray(res.data)
+				) {
+					setOperatorOptions(res.data);
+				} else {
+					setOperatorOptions([]);
+				}
+			} catch (e) {
+				console.error(
+					"Load provider 3 operators:",
+					e,
+				);
+				if (!cancelled) setOperatorOptions([]);
+			} finally {
+				if (!cancelled) setLoadingOperators(false);
+			}
+		}
+
+		loadOperators();
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		formData.provider,
+		formData.countryId,
+		formData.serviceId,
+		pricingByCountryService,
+		countries,
+	]);
 
 	// Fetch all pending orders on component mount
 	useEffect(() => {
@@ -222,6 +436,9 @@ export default function PhoneNumberTab({
 								? order.service?.name || ""
 								: order.service || "",
 						provider: String(order.provider || "1"),
+						operator: order.operator
+							? String(order.operator).trim()
+							: undefined,
 						timestamp:
 							order.createdAt ||
 							order.timestamp ||
@@ -317,6 +534,17 @@ export default function PhoneNumberTab({
 			return;
 		}
 
+		if (
+			formData.provider === "3" &&
+			(!formData.operator ||
+				String(formData.operator).trim() === "")
+		) {
+			toast.error(
+				"Please select an operator for Provider 3",
+			);
+			return;
+		}
+
 		setSubmitting(true);
 
 		try {
@@ -363,6 +591,9 @@ export default function PhoneNumberTab({
 				countryParam,
 				serviceParam,
 				providerParam,
+				formData.provider === "3"
+					? String(formData.operator).trim()
+					: undefined,
 			);
 
 			if (
@@ -378,9 +609,21 @@ export default function PhoneNumberTab({
 						response.data.number || response.data,
 					message: "",
 					status: "pending",
-					country: formData.countryId,
-					service: formData.serviceId,
+					country:
+						countryDisplayNameByKey[
+							formData.countryId
+						] || formData.countryId,
+					service:
+						serviceDisplayNameByKey[
+							formData.serviceId
+						] || formData.serviceId,
 					provider: formData.provider,
+					operator:
+						formData.provider === "3"
+							? String(
+								formData.operator,
+							).trim()
+							: undefined,
 					timestamp: new Date().toISOString(),
 				};
 
@@ -427,7 +670,7 @@ export default function PhoneNumberTab({
 	// }
 
 	const selectedCountry = countries.find(
-		(c) => c.name === formData.countryId,
+		(c) => countryFormKey(c) === formData.countryId,
 	);
 
 	// const providerPrices = getProviderPrices();
@@ -471,14 +714,20 @@ export default function PhoneNumberTab({
 											role="combobox"
 											aria-expanded={open}
 											className="w-full justify-between"
+											disabled={loading}
 										>
-											{formData.countryId
-												? countries.find(
-													(country) =>
-														country.name ===
-														formData.countryId,
-												)?.name
-												: "Select a country..."}
+											{loading ? (
+												<span className="flex items-center gap-2 text-muted-foreground">
+													<Loader2 className="h-4 w-4 animate-spin" />
+													Loading countries…
+												</span>
+											) : formData.countryId ? (
+												countryDisplayNameByKey[
+													formData.countryId
+												] || selectedCountry?.name
+											) : (
+												"Select a country..."
+											)}
 											<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 										</Button>
 									</PopoverTrigger>
@@ -493,35 +742,50 @@ export default function PhoneNumberTab({
 													No country found.
 												</CommandEmpty>
 												<CommandGroup>
-													{countries.map((country) => (
-														<CommandItem
-															key={country.name}
-															value={country.name}
-															onSelect={(currentValue) => {
-																setFormData({
-																	...formData,
-																	countryId:
+													{countries.map((country) => {
+														const cKey =
+															countryFormKey(
+																country,
+															);
+														return (
+															<CommandItem
+																key={cKey}
+																value={cKey}
+																onSelect={(
+																	currentValue,
+																) => {
+																	const nextCountryId =
 																		currentValue ===
 																			formData.countryId
 																			? ""
-																			: currentValue,
-																	serviceId: "",
-																});
-																setOpen(false);
-															}}
-														>
-															<Check
-																className={cn(
-																	"mr-2 h-4 w-4",
-																	formData.countryId ===
-																		country.name
-																		? "opacity-100"
-																		: "opacity-0",
-																)}
-															/>
-															{country.name}
-														</CommandItem>
-													))}
+																			: currentValue;
+																	setFormData({
+																		...formData,
+																		countryId:
+																			nextCountryId,
+																		serviceId:
+																			"",
+																		operator:
+																			"",
+																	});
+																	setOpen(
+																		false,
+																	);
+																}}
+															>
+																<Check
+																	className={cn(
+																		"mr-2 h-4 w-4",
+																		formData.countryId ===
+																			cKey
+																			? "opacity-100"
+																			: "opacity-0",
+																	)}
+																/>
+																{country.name}
+															</CommandItem>
+														);
+													})}
 												</CommandGroup>
 											</CommandList>
 										</Command>
@@ -545,17 +809,26 @@ export default function PhoneNumberTab({
 											role="combobox"
 											aria-expanded={serviceOpen}
 											className="w-full justify-between"
-											disabled={!formData.countryId}
+											disabled={
+												!formData.countryId ||
+												pricingLoading
+											}
 										>
-											{formData.serviceId
-												? availableServices.find(
-													(service) =>
-														service ===
-														formData.serviceId,
-												)
-												: formData.countryId
-													? "Select a service..."
-													: "Select country first"}
+											{pricingLoading &&
+											formData.countryId ? (
+												<span className="flex items-center gap-2 text-muted-foreground">
+													<Loader2 className="h-4 w-4 animate-spin" />
+													Loading services…
+												</span>
+											) : formData.serviceId ? (
+												serviceDisplayNameByKey[
+													formData.serviceId
+												] || formData.serviceId
+											) : formData.countryId ? (
+												"Select a service..."
+											) : (
+												"Select country first"
+											)}
 											<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 										</Button>
 									</PopoverTrigger>
@@ -567,40 +840,59 @@ export default function PhoneNumberTab({
 											<CommandInput placeholder="Search service..." className="h-9" />
 											<CommandList>
 												<CommandEmpty>
-													{formData.countryId
-														? `No services available for this country with Provider ${formData.provider}`
-														: "Select a country first"}
+													{pricingLoading
+														? "Loading…"
+														: formData.countryId
+															? `No services available for this country with Provider ${formData.provider}`
+															: "Select a country first"}
 												</CommandEmpty>
 												<CommandGroup>
 													{availableServices.length > 0 ? (
-														availableServices.map((serviceName) => (
-															<CommandItem
-																key={serviceName}
-																value={serviceName}
-																onSelect={(currentValue) => {
-																	setFormData({
-																		...formData,
-																		serviceId:
-																			currentValue ===
-																				formData.serviceId
-																				? ""
-																				: currentValue,
-																	});
-																	setServiceOpen(false);
-																}}
-															>
-																<Check
-																	className={cn(
-																		"mr-2 h-4 w-4",
-																		formData.serviceId ===
-																			serviceName
-																			? "opacity-100"
-																			: "opacity-0",
-																	)}
-																/>
-																{serviceName}
-															</CommandItem>
-														))
+														availableServices.map(
+															(serviceKey) => (
+																<CommandItem
+																	key={
+																		serviceKey
+																	}
+																	value={
+																		serviceKey
+																	}
+																	onSelect={(
+																		currentValue,
+																	) => {
+																		setFormData(
+																			{
+																				...formData,
+																				serviceId:
+																					currentValue ===
+																						formData.serviceId
+																						? ""
+																						: currentValue,
+																				operator:
+																					"",
+																			},
+																		);
+																		setServiceOpen(
+																			false,
+																		);
+																	}}
+																>
+																	<Check
+																		className={cn(
+																			"mr-2 h-4 w-4",
+																			formData.serviceId ===
+																				serviceKey
+																				? "opacity-100"
+																				: "opacity-0",
+																		)}
+																	/>
+																	{serviceDisplayNameByKey[
+																		serviceKey
+																	] ||
+																		serviceKey}
+																</CommandItem>
+															),
+														)
 													) : (
 														<div className="px-2 py-6 text-center text-sm text-muted-foreground">
 															{formData.countryId
@@ -614,6 +906,7 @@ export default function PhoneNumberTab({
 									</PopoverContent>
 								</Popover>
 								{formData.countryId &&
+									!pricingLoading &&
 									availableServices.length ===
 									0 && (
 										<p className="text-xs text-destructive">
@@ -631,36 +924,57 @@ export default function PhoneNumberTab({
 								<RadioGroup
 									value={formData.provider}
 									onValueChange={(value) => {
-										// Check if current service is available for the new provider
-										const selectedCountryName =
+										const selectedCountryKey =
 											formData.countryId;
-										const selectedServiceName =
+										const selectedServiceKey =
 											formData.serviceId;
 
-										// Only clear service if it's not available for the new provider
 										let newServiceId =
 											formData.serviceId;
 
 										if (
-											selectedCountryName &&
-											selectedServiceName
+											selectedCountryKey &&
+											selectedServiceKey
 										) {
 											const providerKey = `provider${value}`;
 											const isServiceAvailable =
-												pricing.some(
-													(p) =>
-														p.country?.name?.toLowerCase() ===
-														selectedCountryName.toLowerCase() &&
-														p.service?.name?.toLowerCase() ===
-														selectedServiceName.toLowerCase() &&
-														p[providerKey] !=
-														null &&
-														p[providerKey] !==
-														"" &&
-														p[providerKey] > 0,
+												countryPricing.some(
+													(p) => {
+														if (
+															countryKeyFromEntry(
+																p,
+															) !==
+																selectedCountryKey ||
+															serviceKeyFromEntry(
+																p,
+															) !==
+																selectedServiceKey
+														) {
+															return false;
+														}
+														const raw =
+															p[
+																providerKey
+															];
+														if (
+															raw == null ||
+															raw === ""
+														) {
+															return false;
+														}
+														const n =
+															parseFloat(
+																raw,
+															);
+														return (
+															!isNaN(
+																n,
+															) &&
+															n > 0
+														);
+													},
 												);
 
-											// If service is not available for new provider, clear it
 											if (!isServiceAvailable) {
 												newServiceId = "";
 											}
@@ -670,6 +984,7 @@ export default function PhoneNumberTab({
 											...formData,
 											provider: value,
 											serviceId: newServiceId,
+											operator: "",
 										});
 									}}
 								>
@@ -701,8 +1016,110 @@ export default function PhoneNumberTab({
 											</Label>
 										</div>
 									</div>
+									<div className="flex items-center justify-between space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+										<div className="flex items-center space-x-2 flex-1">
+											<RadioGroupItem
+												value="3"
+												id="provider3"
+											/>
+											<Label
+												htmlFor="provider3"
+												className="flex-1 cursor-pointer"
+											>
+												Provider 3
+											</Label>
+										</div>
+									</div>
 								</RadioGroup>
 							</div>
+
+							{formData.provider === "3" && (
+								<div className="space-y-2">
+									<Label htmlFor="operator-p3">
+										Operator *
+									</Label>
+									{loadingOperators ? (
+										<p className="text-sm text-muted-foreground flex items-center gap-2">
+											<Loader2 className="h-4 w-4 animate-spin" />
+											Loading operators…
+										</p>
+									) : (
+										<Select
+											value={formData.operator}
+											onValueChange={(v) =>
+												setFormData({
+													...formData,
+													operator: v,
+												})
+											}
+											disabled={
+												operatorOptions.length ===
+												0
+											}
+										>
+											<SelectTrigger id="operator-p3">
+												<SelectValue placeholder="Select operator" />
+											</SelectTrigger>
+											<SelectContent>
+												{operatorOptions.map(
+													(row, idx) => {
+														const r =
+															row != null &&
+															typeof row ===
+																"object"
+																? row
+																: {
+																	operator:
+																		row,
+																};
+														const op =
+															r.operator ??
+															"";
+														const opStr =
+															String(
+																op,
+															).trim();
+														if (!opStr)
+															return null;
+														return (
+															<SelectItem
+																key={`${opStr}-${idx}`}
+																value={
+																	opStr
+																}
+															>
+																{opStr}
+																{r.ccode
+																	? ` · ${r.ccode}`
+																	: ""}
+																{r.accessCount !=
+																	null
+																	? ` (${r.accessCount})`
+																	: ""}
+															</SelectItem>
+														);
+													},
+												)}
+											</SelectContent>
+										</Select>
+									)}
+									{!loadingOperators &&
+										formData.provider ===
+										"3" &&
+										operatorOptions.length ===
+										0 &&
+										formData.countryId &&
+										formData.serviceId && (
+											<p className="text-xs text-muted-foreground">
+												No operators listed for
+												this country. An admin must
+												run Provider 3 access sync
+												for this service, or choose
+												another country.
+											</p>
+										)}
+								</div>
+							)}
 
 							{/* Balance Warning */}
 							{user.balance < estimatedPrice &&
@@ -724,7 +1141,14 @@ export default function PhoneNumberTab({
 								className="w-full h-12 text-base font-semibold"
 								disabled={
 									submitting ||
-									user.balance < estimatedPrice
+									pricingLoading ||
+									user.balance < estimatedPrice ||
+									loadingOperators ||
+									(formData.provider === "3" &&
+										(!formData.operator ||
+											String(
+												formData.operator,
+											).trim() === ""))
 								}
 							>
 								{submitting ? (
@@ -865,6 +1289,14 @@ export default function PhoneNumberTab({
 																Provider{" "}
 																{order.provider}
 															</span>
+															{order.operator && (
+																<span>
+																	Operator{" "}
+																	{
+																		order.operator
+																	}
+																</span>
+															)}
 															<span>
 																Order:{" "}
 																{order.orderId}

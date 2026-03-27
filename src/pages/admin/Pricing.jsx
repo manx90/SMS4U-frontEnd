@@ -72,6 +72,7 @@ export default function Pricing() {
 		serviceId: "",
 		provider1: "",
 		provider2: "",
+		provider3: "",
 	});
 
 	// Pagination state
@@ -101,12 +102,14 @@ export default function Pricing() {
 			const serviceName = item.service?.name?.toLowerCase() || "";
 			const provider1 = String(item.provider1 || "").toLowerCase();
 			const provider2 = String(item.provider2 || "").toLowerCase();
+			const provider3 = String(item.provider3 ?? "").toLowerCase();
 
 			return (
 				countryName.includes(query) ||
 				serviceName.includes(query) ||
 				provider1.includes(query) ||
-				provider2.includes(query)
+				provider2.includes(query) ||
+				provider3.includes(query)
 			);
 		});
 
@@ -172,6 +175,7 @@ export default function Pricing() {
 			serviceId: "",
 			provider1: "",
 			provider2: "",
+			provider3: "",
 		});
 		setDialogOpen(true);
 	};
@@ -184,6 +188,10 @@ export default function Pricing() {
 			serviceId: item.service?.id || "",
 			provider1: item.provider1 || "",
 			provider2: item.provider2 || "",
+			provider3:
+				item.provider3 != null && item.provider3 !== ""
+					? String(item.provider3)
+					: "",
 		});
 		setDialogOpen(true);
 	};
@@ -210,16 +218,22 @@ export default function Pricing() {
 		e.preventDefault();
 		try {
 			if (isEditing) {
-				await pricingApi.update(
-					selected.id,
-					formData.provider1,
-					formData.provider2,
-				);
+				await pricingApi.update(selected.id, {
+					priceProvider1: formData.provider1,
+					priceProvider2: formData.provider2,
+					priceProvider3: formData.provider3,
+				});
 				toast.success(
 					"Pricing updated successfully",
 				);
 			} else {
-				await pricingApi.create(formData.countryId, formData.serviceId, formData.provider1, formData.provider2);
+				await pricingApi.create({
+					countryId: formData.countryId,
+					serviceId: formData.serviceId,
+					priceProvider1: formData.provider1,
+					priceProvider2: formData.provider2,
+					priceProvider3: formData.provider3 || undefined,
+				});
 				toast.success(
 					"Pricing created successfully",
 				);
@@ -314,6 +328,9 @@ export default function Pricing() {
 								<TableHead>
 									Price Provider 2
 								</TableHead>
+								<TableHead>
+									Price Provider 3
+								</TableHead>
 								<TableHead className="text-right">
 									Actions
 								</TableHead>
@@ -323,7 +340,7 @@ export default function Pricing() {
 							{filteredPricing.length === 0 ? (
 								<TableRow>
 									<TableCell
-										colSpan={5}
+										colSpan={6}
 										className="text-center py-8 text-muted-foreground"
 									>
 										{searchQuery
@@ -353,6 +370,15 @@ export default function Pricing() {
 											<code className=" px-2 py-1 rounded flex items-center gap-1">
 												<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
 												{item.provider2}
+											</code>
+										</TableCell>
+										<TableCell>
+											<code className=" px-2 py-1 rounded flex items-center gap-1">
+												<DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+												{item.provider3 != null &&
+												item.provider3 !== ""
+													? item.provider3
+													: "—"}
 											</code>
 										</TableCell>
 										<TableCell className="text-right space-x-2">
@@ -599,6 +625,27 @@ export default function Pricing() {
 									}
 									required
 								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Provider 3 (optional)</Label>
+								<Input
+									type="number"
+									step="0.01"
+									min="0"
+									placeholder="Leave empty to disable"
+									value={formData.provider3}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											provider3: e.target.value,
+										})
+									}
+								/>
+								<p className="text-xs text-muted-foreground">
+									Set a price to offer Provider 3 for this
+									country and service. Clear when editing
+									to remove provider 3 pricing.
+								</p>
 							</div>
 						</div>
 						<DialogFooter>

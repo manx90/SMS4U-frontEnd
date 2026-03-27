@@ -9,7 +9,6 @@ import { visualizer } from "rollup-plugin-visualizer";
 export default defineConfig({
 	resolve: {
 		alias: {
-			// eslint-disable-next-line no-undef
 			"@": path.resolve(__dirname, "./src"),
 		},
 		dedupe: ["react", "react-dom"],
@@ -23,15 +22,13 @@ export default defineConfig({
 			},
 		}),
 		tailwindcss(),
-		// Gzip compression for smaller file sizes
 		viteCompression({
 			verbose: true,
 			disable: false,
-			threshold: 10240, // Only compress files > 10KB
+			threshold: 10240,
 			algorithm: "gzip",
 			ext: ".gz",
 		}),
-		// Brotli compression (better than gzip)
 		viteCompression({
 			verbose: true,
 			disable: false,
@@ -39,7 +36,6 @@ export default defineConfig({
 			algorithm: "brotliCompress",
 			ext: ".br",
 		}),
-		// Bundle analyzer (comment out in production)
 		visualizer({
 			open: false,
 			gzipSize: true,
@@ -51,24 +47,19 @@ export default defineConfig({
 		include: ["next-themes"],
 	},
 	build: {
-		// Enable minification and tree-shaking
 		minify: "terser",
 		terserOptions: {
 			compress: {
-				drop_console: true, // Remove console.log in production
+				drop_console: true,
 				drop_debugger: true,
 			},
 		},
-		// Optimize chunk sizes
 		chunkSizeWarningLimit: 1000,
-		// Enable source maps for debugging (can disable in production)
 		sourcemap: false,
 		rollupOptions: {
 			output: {
-				// Smart chunking strategy that doesn't break lucide-react
 				manualChunks(id) {
 					if (id.includes("node_modules")) {
-						// React core - keep together
 						if (
 							id.includes("react/") ||
 							id.includes("react-dom/") ||
@@ -76,13 +67,9 @@ export default defineConfig({
 						) {
 							return "vendor-react";
 						}
-						// React Router
-						if (
-							id.includes("react-router-dom/")
-						) {
+						if (id.includes("react-router-dom/")) {
 							return "vendor-router";
 						}
-						// Heavy animation libraries
 						if (
 							id.includes("framer-motion/") ||
 							id.includes("@tsparticles/") ||
@@ -90,59 +77,43 @@ export default defineConfig({
 						) {
 							return "vendor-animation";
 						}
-						// Charts
 						if (
 							id.includes("recharts/") ||
 							id.includes("d3-")
 						) {
 							return "vendor-charts";
 						}
-						// Radix UI components
 						if (id.includes("@radix-ui/")) {
 							return "vendor-ui";
 						}
-						// DO NOT manually chunk lucide-react!
-						// Let Vite tree-shake it automatically
-						// This prevents breaking its barrel exports
 					}
 				},
-				// Optimize asset file naming
 				assetFileNames: (assetInfo) => {
-					let extType = assetInfo.name
-						.split(".")
-						.at(1);
-					if (
-						/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(
-							extType,
-						)
-					) {
+					let extType = assetInfo.name.split(".").at(1);
+					if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
 						extType = "img";
-					} else if (
-						/woff|woff2|ttf|eot/i.test(extType)
-					) {
+					} else if (/woff|woff2|ttf|eot/i.test(extType)) {
 						extType = "fonts";
 					}
 					return `assets/${extType}/[name]-[hash][extname]`;
 				},
-				chunkFileNames:
-					"assets/js/[name]-[hash].js",
-				entryFileNames:
-					"assets/js/[name]-[hash].js",
+				chunkFileNames: "assets/js/[name]-[hash].js",
+				entryFileNames: "assets/js/[name]-[hash].js",
 			},
 		},
 	},
 	server: {
-		port: 3333,
+		port: 3334,
 		strictPort: false,
-		// open: true,
 		historyApiFallback: true,
 		host: "0.0.0.0",
+		allowedHosts: ['ski-1465.store', 'localhost', '127.0.0.1', 'api.sms4u.pro']
 	},
 	preview: {
-		port: 3333,
+		port: 3334,
 		strictPort: false,
-		// open: true,
 		historyApiFallback: true,
 		host: "0.0.0.0",
+		allowedHosts: ['ski-1465.store', 'localhost', '127.0.0.1', 'api.sms4u.pro']
 	},
 });

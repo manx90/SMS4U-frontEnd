@@ -4,7 +4,8 @@ import axios from "axios";
 const api = axios.create({
 	baseURL:
 		import.meta.env.VITE_API_BASE_URL ||
-		"https://api.sms4u.pro/api/v1",
+		// "https://api.sms4u.pro/api/v1",
+		"http://localhost:7071/api/v1",
 	timeout: 30000,
 	headers: {
 		"Content-Type": "application/json",
@@ -344,6 +345,47 @@ export const serviceApi = {
 		);
 		return response;
 	},
+
+	/** Provider 3: operators for country (from last access-sync). country = code_country, id, or ISO. */
+	getProvider3Operators: async (
+		serviceCode,
+		country,
+		interval = "30min",
+	) => {
+		const response = await api.get(
+			"/service/provider3/operators",
+			{
+				params: {
+					serviceCode,
+					country,
+					interval,
+				},
+			},
+		);
+		return response;
+	},
+
+	/** Admin: fetch provider accessinfo and refresh operator snapshots */
+	provider3AccessSync: async ({
+		serviceCode,
+		serviceName,
+		interval = "30min",
+	}) => {
+		const response = await api.get(
+			"/service/provider3/access-sync",
+			{
+				params: {
+					serviceCode,
+					...(serviceName != null &&
+					String(serviceName).trim() !== ""
+						? { serviceName: String(serviceName).trim() }
+						: {}),
+					interval,
+				},
+			},
+		);
+		return response;
+	},
 };
 
 // ==================== Country APIs ====================
@@ -363,6 +405,16 @@ export const countryApi = {
 	create: async (countryData) => {
 		const response = await api.get(
 			"/country/create",
+			{
+				params: countryData,
+			},
+		);
+		return response;
+	},
+
+	update: async (countryData) => {
+		const response = await api.get(
+			"/country/update",
 			{
 				params: countryData,
 			},
@@ -411,6 +463,9 @@ export const pricingApi = {
 		return response;
 	},
 
+	/**
+	 * @param {object} pricingData - countryId, serviceId, priceProvider1, priceProvider2, priceProvider3 (optional)
+	 */
 	create: async (pricingData) => {
 		const response = await api.get(
 			"/pricing/create",
@@ -421,11 +476,15 @@ export const pricingApi = {
 		return response;
 	},
 
-	update: async (id, price) => {
+	/**
+	 * @param {number|string} id - pricing row id
+	 * @param {object} prices - priceProvider1, priceProvider2, priceProvider3 (any subset)
+	 */
+	update: async (id, prices) => {
 		const response = await api.get(
 			"/pricing/update",
 			{
-				params: { id, price },
+				params: { id, ...prices },
 			},
 		);
 		return response;
@@ -458,13 +517,20 @@ export const orderApi = {
 		country,
 		serviceCode,
 		provider,
+		operator,
 	) => {
-		// apiKey is automatically added by request interceptor
 		const params = {
 			country,
 			serviceCode,
 			provider,
 		};
+		if (
+			String(provider) === "3" &&
+			operator != null &&
+			String(operator).trim() !== ""
+		) {
+			params.operator = String(operator).trim();
+		}
 
 		const response = await api.get(
 			"/order/get-number",
