@@ -1,4 +1,9 @@
-import { useState, useEffect, Fragment } from "react";
+import {
+	useState,
+	useEffect,
+	useRef,
+	Fragment,
+} from "react";
 import {
 	pricingApi,
 	countryApi,
@@ -81,46 +86,77 @@ export default function Pricing() {
 	const [total, setTotal] = useState(0);
 	const [totalPages, setTotalPages] = useState(0);
 
-	// Search state
-	const [searchQuery, setSearchQuery] = useState("");
-	const [filteredPricing, setFilteredPricing] = useState([]);
+	// Search: debounced server-side filter (full dataset, not current page only)
+	const [searchInput, setSearchInput] = useState("");
+	const [debouncedSearch, setDebouncedSearch] =
+		useState("");
+	const prevDebouncedRef = useRef("");
 
 	useEffect(() => {
-		loadData();
-	}, [page]);
+		const id = setTimeout(() => {
+			setDebouncedSearch(searchInput.trim());
+		}, 300);
+		return () => clearTimeout(id);
+	}, [searchInput]);
 
-	// Filter pricing based on search query
 	useEffect(() => {
-		if (!searchQuery.trim()) {
-			setFilteredPricing(pricing);
+		const searchChanged =
+			prevDebouncedRef.current !== debouncedSearch;
+		if (searchChanged && page !== 1) {
+			prevDebouncedRef.current = debouncedSearch;
+			setPage(1);
 			return;
 		}
+		prevDebouncedRef.current = debouncedSearch;
 
-		const query = searchQuery.toLowerCase().trim();
-		const filtered = pricing.filter((item) => {
-			const countryName = item.country?.name?.toLowerCase() || "";
-			const serviceName = item.service?.name?.toLowerCase() || "";
-			const provider1 = String(item.provider1 || "").toLowerCase();
-			const provider2 = String(item.provider2 || "").toLowerCase();
-			const provider3 = String(item.provider3 ?? "").toLowerCase();
+		async function loadData() {
+			setLoading(true);
+			try {
+				const [
+					pricingRes,
+					countriesRes,
+					servicesRes,
+				] = await Promise.all([
+					pricingApi.getAll(
+						page,
+						limit,
+						debouncedSearch,
+					),
+					countryApi.getAll(),
+					serviceApi.getAll(),
+				]);
 
-			return (
-				countryName.includes(query) ||
-				serviceName.includes(query) ||
-				provider1.includes(query) ||
-				provider2.includes(query) ||
-				provider3.includes(query)
-			);
-		});
-
-		setFilteredPricing(filtered);
-		// Reset to page 1 when searching
-		if (searchQuery && page !== 1) {
-			setPage(1);
+				if (pricingRes.state === "200") {
+					const pricingData = pricingRes.data || [];
+					setPricing(pricingData);
+					if (pricingRes.pagination) {
+						setTotal(
+							pricingRes.pagination.total || 0,
+						);
+						setTotalPages(
+							pricingRes.pagination.totalPages ||
+								0,
+						);
+					}
+				}
+				if (countriesRes.state === "200")
+					setCountries(countriesRes.data || []);
+				if (servicesRes.state === "200")
+					setServices(servicesRes.data || []);
+			} catch (error) {
+				console.error("Load data error:", error);
+				toast.error(
+					`Failed to load data: ${error.message}`,
+				);
+			} finally {
+				setLoading(false);
+			}
 		}
-	}, [searchQuery, pricing]);
 
-	const loadData = async () => {
+		loadData();
+	}, [page, debouncedSearch, limit]);
+
+	const loadDataAfterMutation = async () => {
 		setLoading(true);
 		try {
 			const [
@@ -128,31 +164,23 @@ export default function Pricing() {
 				countriesRes,
 				servicesRes,
 			] = await Promise.all([
-				pricingApi.getAll(page, limit),
+				pricingApi.getAll(
+					page,
+					limit,
+					debouncedSearch,
+				),
 				countryApi.getAll(),
 				serviceApi.getAll(),
 			]);
 
-			console.log(
-				"Pricing response:",
-				pricingRes,
-			);
-			console.log(
-				"Countries response:",
-				countriesRes,
-			);
-			console.log(
-				"Services response:",
-				servicesRes,
-			);
-
 			if (pricingRes.state === "200") {
 				const pricingData = pricingRes.data || [];
 				setPricing(pricingData);
-				setFilteredPricing(pricingData);
 				if (pricingRes.pagination) {
 					setTotal(pricingRes.pagination.total || 0);
-					setTotalPages(pricingRes.pagination.totalPages || 0);
+					setTotalPages(
+						pricingRes.pagination.totalPages || 0,
+					);
 				}
 			}
 			if (countriesRes.state === "200")
@@ -207,7 +235,7 @@ export default function Pricing() {
 			toast.success(
 				"Pricing deleted successfully",
 			);
-			loadData();
+			loadDataAfterMutation();
 			setDeleteDialogOpen(false);
 		} catch (error) {
 			toast.error(`Failed to delete pricing: ${error.message}`);
@@ -239,7 +267,7 @@ export default function Pricing() {
 				);
 			}
 			setDialogOpen(false);
-			loadData();
+			loadDataAfterMutation();
 		} catch (error) {
 			toast.error(
 				isEditing
@@ -279,9 +307,9 @@ export default function Pricing() {
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search by country, service, or price..."
-							value={searchQuery}
+							value={searchInput}
 							onChange={(e) =>
-								setSearchQuery(e.target.value)
+								setSearchInput(e.target.value)
 							}
 							className="pl-10"
 						/>
@@ -292,19 +320,13 @@ export default function Pricing() {
 			<Card className="glass-card border-primary/10">
 				<CardHeader>
 					<CardTitle>
-						All Pricing Configurations (
-						{searchQuery
-							? filteredPricing.length
-							: total}
-						)
+						All Pricing Configurations ({total})
 					</CardTitle>
-					{searchQuery ? (
+					{debouncedSearch ? (
 						<p className="text-sm text-muted-foreground mt-1">
-							Found {filteredPricing.length} result
-							{filteredPricing.length !== 1
-								? "s"
-								: ""}{" "}
-							for "{searchQuery}"
+							Found {total} result
+							{total !== 1 ? "s" : ""} for &quot;
+							{debouncedSearch}&quot;
 						</p>
 					) : (
 						total > 0 && (
@@ -337,19 +359,19 @@ export default function Pricing() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredPricing.length === 0 ? (
+							{pricing.length === 0 ? (
 								<TableRow>
 									<TableCell
 										colSpan={6}
 										className="text-center py-8 text-muted-foreground"
 									>
-										{searchQuery
-											? `No results found for "${searchQuery}"`
+										{debouncedSearch
+											? `No results found for "${debouncedSearch}"`
 											: "No pricing configurations found"}
 									</TableCell>
 								</TableRow>
 							) : (
-								filteredPricing.map((item) => (
+								pricing.map((item) => (
 									<TableRow
 										key={item.id}
 										className="hover:bg-muted/50"
@@ -406,7 +428,7 @@ export default function Pricing() {
 							)}
 						</TableBody>
 					</Table>
-					{!searchQuery && totalPages > 1 && (
+					{totalPages > 1 && (
 						<div className="mt-4 flex justify-center">
 							<Pagination>
 								<PaginationContent>

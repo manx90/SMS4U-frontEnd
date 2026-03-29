@@ -2,7 +2,15 @@ import {
 	useState,
 	useEffect,
 	useMemo,
+	useRef,
 } from "react";
+
+/** تركيز العنصر بعد إغلاق القوائم (إطار الرسم التالي). */
+function focusElementById(id) {
+	requestAnimationFrame(() => {
+		document.getElementById(id)?.focus();
+	});
+}
 import { Link } from "react-router-dom";
 import {
 	orderApi,
@@ -111,7 +119,8 @@ export default function PhoneNumberTab({
 		countryId: "",
 		serviceId: "",
 		provider: "1",
-		operator: "",
+		/** Provider 3: 1-based server slot sent as query `server` (1, 2, 3, …) */
+		server: "",
 	});
 	const [estimatedPrice, setEstimatedPrice] =
 		useState(0);
@@ -123,6 +132,24 @@ export default function PhoneNumberTab({
 		useState([]);
 	const [pricingLoading, setPricingLoading] =
 		useState(false);
+	const shouldFocusServerRef = useRef(false);
+
+	// After choosing Provider 3, focus server Select when options are ready
+	useEffect(() => {
+		if (!shouldFocusServerRef.current) return;
+		if (formData.provider !== "3") {
+			shouldFocusServerRef.current = false;
+			return;
+		}
+		if (loadingOperators || operatorOptions.length === 0)
+			return;
+		shouldFocusServerRef.current = false;
+		focusElementById("phone-server-select");
+	}, [
+		formData.provider,
+		loadingOperators,
+		operatorOptions.length,
+	]);
 
 	// Load pricing for the selected country only (GET /pricing/country/:id)
 	useEffect(() => {
@@ -368,7 +395,26 @@ export default function PhoneNumberTab({
 					res.state === "200" &&
 					Array.isArray(res.data)
 				) {
-					setOperatorOptions(res.data);
+					const normalized = res.data.map(
+						(row, idx) => {
+							if (
+								row &&
+								row.label != null &&
+								row.index != null
+							) {
+								return {
+									label: String(row.label),
+									index: Number(row.index),
+								};
+							}
+							const n = idx + 1;
+							return {
+								label: `Server ${n}`,
+								index: n,
+							};
+						},
+					);
+					setOperatorOptions(normalized);
 				} else {
 					setOperatorOptions([]);
 				}
@@ -436,9 +482,6 @@ export default function PhoneNumberTab({
 								? order.service?.name || ""
 								: order.service || "",
 						provider: String(order.provider || "1"),
-						operator: order.operator
-							? String(order.operator).trim()
-							: undefined,
 						timestamp:
 							order.createdAt ||
 							order.timestamp ||
@@ -536,11 +579,11 @@ export default function PhoneNumberTab({
 
 		if (
 			formData.provider === "3" &&
-			(!formData.operator ||
-				String(formData.operator).trim() === "")
+			(!formData.server ||
+				String(formData.server).trim() === "")
 		) {
 			toast.error(
-				"Please select an operator for Provider 3",
+				"Please select a server for Provider 3",
 			);
 			return;
 		}
@@ -591,15 +634,24 @@ export default function PhoneNumberTab({
 				countryParam,
 				serviceParam,
 				providerParam,
+				undefined,
 				formData.provider === "3"
-					? String(formData.operator).trim()
-					: undefined,
+					? { server: formData.server }
+					: {},
 			);
 
 			if (
 				response.state === "200" &&
 				response.data
 			) {
+				const serverLabel =
+					formData.provider === "3"
+						? operatorOptions.find(
+								(o) =>
+									String(o.index) ===
+									String(formData.server),
+							)?.label
+						: undefined;
 				const newOrder = {
 					orderId:
 						response.data.publicId ||
@@ -618,11 +670,9 @@ export default function PhoneNumberTab({
 							formData.serviceId
 						] || formData.serviceId,
 					provider: formData.provider,
-					operator:
+					operatorSlotLabel:
 						formData.provider === "3"
-							? String(
-								formData.operator,
-							).trim()
+							? serverLabel
 							: undefined,
 					timestamp: new Date().toISOString(),
 				};
@@ -710,6 +760,8 @@ export default function PhoneNumberTab({
 								<Popover open={open} onOpenChange={setOpen}>
 									<PopoverTrigger asChild>
 										<Button
+											id="phone-country-combobox"
+											type="button"
 											variant="outline"
 											role="combobox"
 											aria-expanded={open}
@@ -747,10 +799,22 @@ export default function PhoneNumberTab({
 															countryFormKey(
 																country,
 															);
+														const countryCode =
+															country.code ??
+															country.code_country;
 														return (
 															<CommandItem
 																key={cKey}
 																value={cKey}
+																keywords={[
+																	country.name ||
+																		"",
+																	String(
+																		countryCode ??
+																			"",
+																	),
+																	cKey,
+																]}
 																onSelect={(
 																	currentValue,
 																) => {
@@ -765,12 +829,18 @@ export default function PhoneNumberTab({
 																			nextCountryId,
 																		serviceId:
 																			"",
-																		operator:
-																			"",
+																		server: "",
 																	});
 																	setOpen(
 																		false,
 																	);
+																	if (
+																		nextCountryId
+																	) {
+																		focusElementById(
+																			"phone-service-combobox",
+																		);
+																	}
 																}}
 															>
 																<Check
@@ -805,6 +875,8 @@ export default function PhoneNumberTab({
 								<Popover open={serviceOpen} onOpenChange={setServiceOpen}>
 									<PopoverTrigger asChild>
 										<Button
+											id="phone-service-combobox"
+											type="button"
 											variant="outline"
 											role="combobox"
 											aria-expanded={serviceOpen}
@@ -849,7 +921,13 @@ export default function PhoneNumberTab({
 												<CommandGroup>
 													{availableServices.length > 0 ? (
 														availableServices.map(
-															(serviceKey) => (
+															(serviceKey) => {
+																const svcLabel =
+																	serviceDisplayNameByKey[
+																		serviceKey
+																	] ||
+																	serviceKey;
+																return (
 																<CommandItem
 																	key={
 																		serviceKey
@@ -857,24 +935,36 @@ export default function PhoneNumberTab({
 																	value={
 																		serviceKey
 																	}
+																	keywords={[
+																		svcLabel,
+																		serviceKey,
+																	]}
 																	onSelect={(
 																		currentValue,
 																	) => {
+																		const nextSid =
+																			currentValue ===
+																			formData.serviceId
+																				? ""
+																				: currentValue;
 																		setFormData(
 																			{
 																				...formData,
 																				serviceId:
-																					currentValue ===
-																						formData.serviceId
-																						? ""
-																						: currentValue,
-																				operator:
-																					"",
+																					nextSid,
+																				server: "",
 																			},
 																		);
 																		setServiceOpen(
 																			false,
 																		);
+																		if (
+																			nextSid
+																		) {
+																			focusElementById(
+																				"provider1",
+																			);
+																		}
 																	}}
 																>
 																	<Check
@@ -886,12 +976,10 @@ export default function PhoneNumberTab({
 																				: "opacity-0",
 																		)}
 																	/>
-																	{serviceDisplayNameByKey[
-																		serviceKey
-																	] ||
-																		serviceKey}
+																	{svcLabel}
 																</CommandItem>
-															),
+																);
+															},
 														)
 													) : (
 														<div className="px-2 py-6 text-center text-sm text-muted-foreground">
@@ -984,8 +1072,16 @@ export default function PhoneNumberTab({
 											...formData,
 											provider: value,
 											serviceId: newServiceId,
-											operator: "",
+											server: "",
 										});
+										if (value === "3") {
+											shouldFocusServerRef.current =
+												true;
+										} else {
+											focusElementById(
+												"get-number-submit",
+											);
+										}
 									}}
 								>
 									<div className="flex items-center justify-between space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -1034,68 +1130,58 @@ export default function PhoneNumberTab({
 							</div>
 
 							{formData.provider === "3" && (
-								<div className="space-y-2">
-									<Label htmlFor="operator-p3">
-										Operator *
+								<div className="space-y-2 w-full">
+									<Label htmlFor="phone-server-select">
+										Server *
 									</Label>
 									{loadingOperators ? (
 										<p className="text-sm text-muted-foreground flex items-center gap-2">
 											<Loader2 className="h-4 w-4 animate-spin" />
-											Loading operators…
+											Loading servers…
 										</p>
 									) : (
 										<Select
-											value={formData.operator}
-											onValueChange={(v) =>
+											value={
+												formData.server ||
+												undefined
+											}
+											onValueChange={(v) => {
 												setFormData({
 													...formData,
-													operator: v,
-												})
-											}
+													server: v,
+												});
+												if (v) {
+													focusElementById(
+														"get-number-submit",
+													);
+												}
+											}}
 											disabled={
 												operatorOptions.length ===
 												0
 											}
 										>
-											<SelectTrigger id="operator-p3">
-												<SelectValue placeholder="Select operator" />
+											<SelectTrigger
+												id="phone-server-select"
+											>
+												<SelectValue placeholder="Select server" />
 											</SelectTrigger>
 											<SelectContent>
 												{operatorOptions.map(
-													(row, idx) => {
-														const r =
-															row != null &&
-															typeof row ===
-																"object"
-																? row
-																: {
-																	operator:
-																		row,
-																};
-														const op =
-															r.operator ??
-															"";
-														const opStr =
-															String(
-																op,
-															).trim();
-														if (!opStr)
-															return null;
+													(row) => {
+														const idx =
+															row.index;
+														const label =
+															row.label ||
+															`Server ${idx}`;
 														return (
 															<SelectItem
-																key={`${opStr}-${idx}`}
-																value={
-																	opStr
-																}
+																key={`srv-${idx}`}
+																value={String(
+																	idx,
+																)}
 															>
-																{opStr}
-																{r.ccode
-																	? ` · ${r.ccode}`
-																	: ""}
-																{r.accessCount !=
-																	null
-																	? ` (${r.accessCount})`
-																	: ""}
+																{label}
 															</SelectItem>
 														);
 													},
@@ -1111,10 +1197,10 @@ export default function PhoneNumberTab({
 										formData.countryId &&
 										formData.serviceId && (
 											<p className="text-xs text-muted-foreground">
-												No operators listed for
-												this country. An admin must
-												run Provider 3 access sync
-												for this service, or choose
+												No servers listed for this
+												country. An admin must run
+												Provider 3 access sync for
+												this service, or choose
 												another country.
 											</p>
 										)}
@@ -1137,6 +1223,7 @@ export default function PhoneNumberTab({
 								)}
 
 							<Button
+								id="get-number-submit"
 								type="submit"
 								className="w-full h-12 text-base font-semibold"
 								disabled={
@@ -1145,9 +1232,9 @@ export default function PhoneNumberTab({
 									user.balance < estimatedPrice ||
 									loadingOperators ||
 									(formData.provider === "3" &&
-										(!formData.operator ||
+										(!formData.server ||
 											String(
-												formData.operator,
+												formData.server,
 											).trim() === ""))
 								}
 							>
@@ -1289,11 +1376,10 @@ export default function PhoneNumberTab({
 																Provider{" "}
 																{order.provider}
 															</span>
-															{order.operator && (
+															{order.operatorSlotLabel && (
 																<span>
-																	Operator{" "}
 																	{
-																		order.operator
+																		order.operatorSlotLabel
 																	}
 																</span>
 															)}

@@ -473,11 +473,19 @@ export default function ApiDocs() {
 							example: "1",
 						},
 						{
+							name: "server",
+							type: "string",
+							required: false,
+							description:
+								"Required when provider is 3 (users): 1, 2, 3, … — same as `index` from GET /service/provider3/operators (Server 1 = 1). Raw `operator` is not accepted for clients.",
+							example: "2",
+						},
+						{
 							name: "operator",
 							type: "string",
 							required: false,
 							description:
-								"Required when provider is 3 (operator id from provider access data)",
+								"Admin only when provider is 3: raw operator id from the upstream API.",
 							example: "op3410",
 						},
 					],

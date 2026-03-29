@@ -26,6 +26,8 @@ import {
 	Edit,
 	Trash2,
 	Package,
+	RefreshCw,
+	Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,6 +58,7 @@ export default function Services() {
 		serviceName: "",
 	});
 	const [syncing, setSyncing] = useState(false);
+	const [syncingAll, setSyncingAll] = useState(false);
 
 	useEffect(() => {
 		loadServices();
@@ -202,6 +205,47 @@ export default function Services() {
 		}
 	};
 
+	const handleProvider3SyncAll = async () => {
+		setSyncingAll(true);
+		try {
+			const res =
+				await serviceApi.provider3AccessSyncAll();
+			if (res.state === "200") {
+				const d = res.data;
+				if (d?.skipped && d?.reason === "no_provider3_services") {
+					toast.info(
+						"No services with Provider 3 configured — set provider3 on a service first.",
+					);
+				} else if (d?.ok != null || d?.failed != null) {
+					toast.success(
+						`Full sync done: ${d.ok ?? 0} ok, ${d.failed ?? 0} failed`,
+					);
+				} else {
+					toast.success(
+						res.msg || "Provider 3 full sync completed",
+					);
+				}
+			} else {
+				toast.error(
+					res.error ||
+						res.msg ||
+						"Full sync failed",
+				);
+			}
+		} catch (err) {
+			const msg =
+				err?.response?.data?.error ||
+				err?.error ||
+				err?.message ||
+				"Full sync failed";
+			toast.error(msg);
+		} finally {
+			setSyncingAll(false);
+		}
+	};
+
+	const syncBusy = syncing || syncingAll;
+
 	if (loading) {
 		return (
 			<div className="space-y-6">
@@ -335,15 +379,37 @@ export default function Services() {
 
 			<Card className="glass-card border-primary/10">
 				<CardHeader>
-					<CardTitle className="text-lg">
-						Provider 3 — access sync
-					</CardTitle>
-					<CardDescription>
-						Fetch operator and country data from the third
-						provider and store it so users can choose an
-						operator when ordering. Run this after configuring
-						the backend env and service codes.
-					</CardDescription>
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+						<div className="space-y-1.5">
+							<CardTitle className="text-lg">
+								Provider 3 — access sync
+							</CardTitle>
+							<CardDescription>
+								Fetch operator and country data from the
+								third provider and store it so users can
+								choose an operator when ordering. Run after
+								configuring env and service codes. The same
+								job runs on a schedule in the background;
+								use &quot;Sync all&quot; after adding
+								countries/services so you do not wait for
+								the next run.
+							</CardDescription>
+						</div>
+						<Button
+							type="button"
+							variant="secondary"
+							className="shrink-0 gap-2"
+							disabled={syncBusy}
+							onClick={handleProvider3SyncAll}
+						>
+							{syncingAll ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<RefreshCw className="h-4 w-4" />
+							)}
+							Sync all (like cron)
+						</Button>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<form
@@ -384,7 +450,7 @@ export default function Services() {
 						</div>
 						<Button
 							type="submit"
-							disabled={syncing}
+							disabled={syncBusy}
 							className="sm:mb-0.5"
 						>
 							{syncing ? "Syncing…" : "Run sync"}

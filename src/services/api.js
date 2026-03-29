@@ -346,21 +346,22 @@ export const serviceApi = {
 		return response;
 	},
 
-	/** Provider 3: operators for country (from last access-sync). country = code_country, id, or ISO. */
+	/** Provider 3: operators for country (from last access-sync). Omit interval — server uses its sync default. */
 	getProvider3Operators: async (
 		serviceCode,
 		country,
-		interval = "30min",
+		interval,
 	) => {
+		const params = { serviceCode, country };
+		if (
+			interval != null &&
+			String(interval).trim() !== ""
+		) {
+			params.interval = String(interval).trim();
+		}
 		const response = await api.get(
 			"/service/provider3/operators",
-			{
-				params: {
-					serviceCode,
-					country,
-					interval,
-				},
-			},
+			{ params },
 		);
 		return response;
 	},
@@ -383,6 +384,15 @@ export const serviceApi = {
 					interval,
 				},
 			},
+		);
+		return response;
+	},
+
+	/** Admin: same as cron — sync all services that have provider3 set */
+	provider3AccessSyncAll: async () => {
+		const response = await api.get(
+			"/service/provider3/access-sync-all",
+			{ timeout: 120000 },
 		);
 		return response;
 	},
@@ -435,9 +445,18 @@ export const countryApi = {
 
 // ==================== Pricing APIs ====================
 export const pricingApi = {
-	getAll: async (page = 1, limit = 50) => {
+	/**
+	 * @param {number} page
+	 * @param {number} limit
+	 * @param {string} [search] - optional server-side filter (country/service name & codes, prices)
+	 */
+	getAll: async (page = 1, limit = 50, search = "") => {
+		const params = { page, limit };
+		if (search && String(search).trim() !== "") {
+			params.search = String(search).trim();
+		}
 		const response = await api.get("/pricing/", {
-			params: { page, limit },
+			params,
 		});
 		return response;
 	},
@@ -513,23 +532,34 @@ export const orderApi = {
 		return response;
 	},
 
+	/**
+	 * Provider 3: pass `server` in options (1, 2, 3 = Server 1, 2, 3). Snapshot interval is server-only.
+	 * Admins may pass raw `operator` as the 4th argument.
+	 */
 	getNumber: async (
 		country,
 		serviceCode,
 		provider,
 		operator,
+		options = {},
 	) => {
 		const params = {
 			country,
 			serviceCode,
 			provider,
 		};
-		if (
-			String(provider) === "3" &&
-			operator != null &&
-			String(operator).trim() !== ""
-		) {
-			params.operator = String(operator).trim();
+		if (String(provider) === "3") {
+			if (
+				options.server != null &&
+				String(options.server).trim() !== ""
+			) {
+				params.server = String(options.server).trim();
+			} else if (
+				operator != null &&
+				String(operator).trim() !== ""
+			) {
+				params.operator = String(operator).trim();
+			}
 		}
 
 		const response = await api.get(

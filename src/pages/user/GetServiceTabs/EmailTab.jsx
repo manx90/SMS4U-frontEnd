@@ -3,6 +3,13 @@ import {
 	useEffect,
 	useCallback,
 } from "react";
+
+/** تركيز العنصر بعد إغلاق القوائم (إطار الرسم التالي). */
+function focusElementById(id) {
+	requestAnimationFrame(() => {
+		document.getElementById(id)?.focus();
+	});
+}
 import { orderApi } from "../../../services/api";
 import {
 	Card,
@@ -480,13 +487,16 @@ export default function EmailTab({
 								</Label>
 								<Select
 									value={formData.site}
-									onValueChange={(value) =>
+									onValueChange={(value) => {
 										setFormData({
 											...formData,
 											site: value,
 											domain: "",
-										})
-									}
+										});
+										if (value) {
+											focusElementById("domain");
+										}
+									}}
 								>
 									<SelectTrigger id="site">
 										<SelectValue placeholder="Select email site" />
@@ -517,12 +527,17 @@ export default function EmailTab({
 									value={
 										formData.domain || undefined
 									}
-									onValueChange={(value) =>
+									onValueChange={(value) => {
 										setFormData({
 											...formData,
 											domain: value,
-										})
-									}
+										});
+										if (value) {
+											focusElementById(
+												"get-email-submit",
+											);
+										}
+									}}
 									disabled={!formData.site}
 								>
 									<SelectTrigger id="domain">
@@ -629,6 +644,7 @@ export default function EmailTab({
 								)}
 
 							<Button
+								id="get-email-submit"
 								type="submit"
 								className="w-full h-12 text-base font-semibold"
 								disabled={
