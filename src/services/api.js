@@ -4,8 +4,7 @@ import axios from "axios";
 const api = axios.create({
 	baseURL:
 		import.meta.env.VITE_API_BASE_URL ||
-		// "https://api.sms4u.pro/api/v1",
-		"http://localhost:7071/api/v1",
+		"https://api.sms4u.pro/api/v1",
 	timeout: 30000,
 	headers: {
 		"Content-Type": "application/json",
@@ -346,7 +345,18 @@ export const serviceApi = {
 		return response;
 	},
 
-	/** Provider 3: operators for country (from last access-sync). Omit interval — server uses its sync default. */
+};
+
+// ==================== Provider 3 APIs ====================
+export const provider3Api = {
+	getPricingByCountry: async (countryId) => {
+		const response = await api.get(
+			"/provider3/pricing-by-country",
+			{ params: { countryId } },
+		);
+		return response;
+	},
+
 	getProvider3Operators: async (
 		serviceCode,
 		country,
@@ -360,20 +370,19 @@ export const serviceApi = {
 			params.interval = String(interval).trim();
 		}
 		const response = await api.get(
-			"/service/provider3/operators",
+			"/provider3/operators",
 			{ params },
 		);
 		return response;
 	},
 
-	/** Admin: fetch provider accessinfo and refresh operator snapshots */
 	provider3AccessSync: async ({
 		serviceCode,
 		serviceName,
 		interval = "30min",
 	}) => {
 		const response = await api.get(
-			"/service/provider3/access-sync",
+			"/provider3/access-sync",
 			{
 				params: {
 					serviceCode,
@@ -388,13 +397,58 @@ export const serviceApi = {
 		return response;
 	},
 
-	/** Admin: same as cron — sync all services that have provider3 set */
 	provider3AccessSyncAll: async () => {
 		const response = await api.get(
-			"/service/provider3/access-sync-all",
+			"/provider3/access-sync-all",
 			{ timeout: 120000 },
 		);
 		return response;
+	},
+
+	getProvider3Number: async (
+		country,
+		serviceCode,
+		options = {},
+	) => {
+		const params = { country, serviceCode };
+		if (
+			options.server != null &&
+			String(options.server).trim() !== ""
+		) {
+			params.server = String(options.server).trim();
+		} else if (
+			options.operator != null &&
+			String(options.operator).trim() !== ""
+		) {
+			params.operator = String(options.operator).trim();
+		}
+		const response = await api.get(
+			"/provider3/get-number",
+			{ params },
+		);
+		return response;
+	},
+
+	configList: async () => {
+		return await api.get("/provider3/config");
+	},
+
+	configCreate: async (params) => {
+		return await api.get("/provider3/config/create", {
+			params,
+		});
+	},
+
+	configUpdate: async (params) => {
+		return await api.get("/provider3/config/update", {
+			params,
+		});
+	},
+
+	configRemove: async (id) => {
+		return await api.get("/provider3/config/remove", {
+			params: { id },
+		});
 	},
 };
 
@@ -497,7 +551,7 @@ export const pricingApi = {
 
 	/**
 	 * @param {number|string} id - pricing row id
-	 * @param {object} prices - priceProvider1, priceProvider2, priceProvider3 (any subset)
+	 * @param {object} prices - priceProvider1, priceProvider2 (any subset)
 	 */
 	update: async (id, prices) => {
 		const response = await api.get(
@@ -532,35 +586,16 @@ export const orderApi = {
 		return response;
 	},
 
-	/**
-	 * Provider 3: pass `server` in options (1, 2, 3 = Server 1, 2, 3). Snapshot interval is server-only.
-	 * Admins may pass raw `operator` as the 4th argument.
-	 */
 	getNumber: async (
 		country,
 		serviceCode,
 		provider,
-		operator,
-		options = {},
 	) => {
 		const params = {
 			country,
 			serviceCode,
 			provider,
 		};
-		if (String(provider) === "3") {
-			if (
-				options.server != null &&
-				String(options.server).trim() !== ""
-			) {
-				params.server = String(options.server).trim();
-			} else if (
-				operator != null &&
-				String(operator).trim() !== ""
-			) {
-				params.operator = String(operator).trim();
-			}
-		}
 
 		const response = await api.get(
 			"/order/get-number",

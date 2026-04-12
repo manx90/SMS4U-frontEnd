@@ -2,7 +2,6 @@ import {
 	useState,
 	useEffect,
 	useMemo,
-	useRef,
 } from "react";
 
 /** تركيز العنصر بعد إغلاق القوائم (إطار الرسم التالي). */
@@ -14,7 +13,6 @@ function focusElementById(id) {
 import { Link } from "react-router-dom";
 import {
 	orderApi,
-	serviceApi,
 	pricingApi,
 } from "../../../services/api";
 import {
@@ -61,13 +59,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 
 /** Prefer API codes so pricing matches countries/services even if names differ. */
@@ -119,37 +110,13 @@ export default function PhoneNumberTab({
 		countryId: "",
 		serviceId: "",
 		provider: "1",
-		/** Provider 3: 1-based server slot sent as query `server` (1, 2, 3, …) */
-		server: "",
 	});
 	const [estimatedPrice, setEstimatedPrice] =
 		useState(0);
-	const [operatorOptions, setOperatorOptions] =
-		useState([]);
-	const [loadingOperators, setLoadingOperators] =
-		useState(false);
 	const [countryPricing, setCountryPricing] =
 		useState([]);
 	const [pricingLoading, setPricingLoading] =
 		useState(false);
-	const shouldFocusServerRef = useRef(false);
-
-	// After choosing Provider 3, focus server Select when options are ready
-	useEffect(() => {
-		if (!shouldFocusServerRef.current) return;
-		if (formData.provider !== "3") {
-			shouldFocusServerRef.current = false;
-			return;
-		}
-		if (loadingOperators || operatorOptions.length === 0)
-			return;
-		shouldFocusServerRef.current = false;
-		focusElementById("phone-server-select");
-	}, [
-		formData.provider,
-		loadingOperators,
-		operatorOptions.length,
-	]);
 
 	// Load pricing for the selected country only (GET /pricing/country/:id)
 	useEffect(() => {
@@ -240,17 +207,9 @@ export default function PhoneNumberTab({
 				!isNaN(parseFloat(entry.provider2))
 					? parseFloat(entry.provider2)
 					: 0;
-			const provider3Price =
-				entry.provider3 != null &&
-				entry.provider3 !== "" &&
-				!isNaN(parseFloat(entry.provider3))
-					? parseFloat(entry.provider3)
-					: 0;
-
 			priceMap[`${countryKey}::${serviceKey}`] = {
 				provider1: provider1Price,
 				provider2: provider2Price,
-				provider3: provider3Price,
 				countryCode: entry.country?.code,
 				serviceCode: entry.service?.code,
 			};
@@ -259,7 +218,6 @@ export default function PhoneNumberTab({
 				countryProviderMap[countryKey] = {
 					"1": new Set(),
 					"2": new Set(),
-					"3": new Set(),
 				};
 			}
 
@@ -271,12 +229,6 @@ export default function PhoneNumberTab({
 
 			if (provider2Price > 0) {
 				countryProviderMap[countryKey]["2"].add(
-					serviceKey,
-				);
-			}
-
-			if (provider3Price > 0) {
-				countryProviderMap[countryKey]["3"].add(
 					serviceKey,
 				);
 			}
@@ -336,111 +288,6 @@ export default function PhoneNumberTab({
 		);
 	}, [selectedPriceConfig, formData.provider]);
 
-	useEffect(() => {
-		let cancelled = false;
-
-		async function loadOperators() {
-			if (
-				formData.provider !== "3" ||
-				!formData.countryId ||
-				!formData.serviceId
-			) {
-				setOperatorOptions([]);
-				return;
-			}
-
-			const countryKey =
-				formData.countryId?.toLowerCase()?.trim();
-			const serviceKey =
-				formData.serviceId?.toLowerCase()?.trim();
-			const pricingEntry =
-				countryKey && serviceKey
-					? pricingByCountryService[
-					`${countryKey}::${serviceKey}`
-					]
-					: null;
-
-			if (
-				!pricingEntry?.serviceCode ||
-				!pricingEntry?.provider3 ||
-				pricingEntry.provider3 <= 0
-			) {
-				setOperatorOptions([]);
-				return;
-			}
-
-			const countryMeta = countries.find(
-				(c) =>
-					countryFormKey(c) === formData.countryId,
-			);
-			const countryParam =
-				countryMeta?.code ??
-				countryMeta?.code_country ??
-				"";
-
-			if (!String(countryParam).trim()) {
-				setOperatorOptions([]);
-				return;
-			}
-
-			setLoadingOperators(true);
-			try {
-				const res =
-					await serviceApi.getProvider3Operators(
-						String(pricingEntry.serviceCode),
-						String(countryParam).trim(),
-					);
-				if (cancelled) return;
-				if (
-					res.state === "200" &&
-					Array.isArray(res.data)
-				) {
-					const normalized = res.data.map(
-						(row, idx) => {
-							if (
-								row &&
-								row.label != null &&
-								row.index != null
-							) {
-								return {
-									label: String(row.label),
-									index: Number(row.index),
-								};
-							}
-							const n = idx + 1;
-							return {
-								label: `Server ${n}`,
-								index: n,
-							};
-						},
-					);
-					setOperatorOptions(normalized);
-				} else {
-					setOperatorOptions([]);
-				}
-			} catch (e) {
-				console.error(
-					"Load provider 3 operators:",
-					e,
-				);
-				if (!cancelled) setOperatorOptions([]);
-			} finally {
-				if (!cancelled) setLoadingOperators(false);
-			}
-		}
-
-		loadOperators();
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		formData.provider,
-		formData.countryId,
-		formData.serviceId,
-		pricingByCountryService,
-		countries,
-	]);
-
 	// Fetch all pending orders on component mount
 	useEffect(() => {
 		const fetchPendingOrders = async () => {
@@ -463,7 +310,8 @@ export default function PhoneNumberTab({
 						(order) =>
 							order.number &&
 							!order.email &&
-							order.status === "pending",
+							order.status === "pending" &&
+							String(order.provider) !== "3",
 					)
 					.map((order) => ({
 						orderId:
@@ -577,17 +425,6 @@ export default function PhoneNumberTab({
 			return;
 		}
 
-		if (
-			formData.provider === "3" &&
-			(!formData.server ||
-				String(formData.server).trim() === "")
-		) {
-			toast.error(
-				"Please select a server for Provider 3",
-			);
-			return;
-		}
-
 		setSubmitting(true);
 
 		try {
@@ -634,24 +471,12 @@ export default function PhoneNumberTab({
 				countryParam,
 				serviceParam,
 				providerParam,
-				undefined,
-				formData.provider === "3"
-					? { server: formData.server }
-					: {},
 			);
 
 			if (
 				response.state === "200" &&
 				response.data
 			) {
-				const serverLabel =
-					formData.provider === "3"
-						? operatorOptions.find(
-								(o) =>
-									String(o.index) ===
-									String(formData.server),
-							)?.label
-						: undefined;
 				const newOrder = {
 					orderId:
 						response.data.publicId ||
@@ -670,10 +495,6 @@ export default function PhoneNumberTab({
 							formData.serviceId
 						] || formData.serviceId,
 					provider: formData.provider,
-					operatorSlotLabel:
-						formData.provider === "3"
-							? serverLabel
-							: undefined,
 					timestamp: new Date().toISOString(),
 				};
 
@@ -829,7 +650,6 @@ export default function PhoneNumberTab({
 																			nextCountryId,
 																		serviceId:
 																			"",
-																		server: "",
 																	});
 																	setOpen(
 																		false,
@@ -952,7 +772,6 @@ export default function PhoneNumberTab({
 																				...formData,
 																				serviceId:
 																					nextSid,
-																				server: "",
 																			},
 																		);
 																		setServiceOpen(
@@ -1072,16 +891,10 @@ export default function PhoneNumberTab({
 											...formData,
 											provider: value,
 											serviceId: newServiceId,
-											server: "",
 										});
-										if (value === "3") {
-											shouldFocusServerRef.current =
-												true;
-										} else {
-											focusElementById(
-												"get-number-submit",
-											);
-										}
+										focusElementById(
+											"get-number-submit",
+										);
 									}}
 								>
 									<div className="flex items-center justify-between space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -1112,100 +925,8 @@ export default function PhoneNumberTab({
 											</Label>
 										</div>
 									</div>
-									<div className="flex items-center justify-between space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-										<div className="flex items-center space-x-2 flex-1">
-											<RadioGroupItem
-												value="3"
-												id="provider3"
-											/>
-											<Label
-												htmlFor="provider3"
-												className="flex-1 cursor-pointer"
-											>
-												Provider 3
-											</Label>
-										</div>
-									</div>
 								</RadioGroup>
 							</div>
-
-							{formData.provider === "3" && (
-								<div className="space-y-2 w-full">
-									<Label htmlFor="phone-server-select">
-										Server *
-									</Label>
-									{loadingOperators ? (
-										<p className="text-sm text-muted-foreground flex items-center gap-2">
-											<Loader2 className="h-4 w-4 animate-spin" />
-											Loading servers…
-										</p>
-									) : (
-										<Select
-											value={
-												formData.server ||
-												undefined
-											}
-											onValueChange={(v) => {
-												setFormData({
-													...formData,
-													server: v,
-												});
-												if (v) {
-													focusElementById(
-														"get-number-submit",
-													);
-												}
-											}}
-											disabled={
-												operatorOptions.length ===
-												0
-											}
-										>
-											<SelectTrigger
-												id="phone-server-select"
-											>
-												<SelectValue placeholder="Select server" />
-											</SelectTrigger>
-											<SelectContent>
-												{operatorOptions.map(
-													(row) => {
-														const idx =
-															row.index;
-														const label =
-															row.label ||
-															`Server ${idx}`;
-														return (
-															<SelectItem
-																key={`srv-${idx}`}
-																value={String(
-																	idx,
-																)}
-															>
-																{label}
-															</SelectItem>
-														);
-													},
-												)}
-											</SelectContent>
-										</Select>
-									)}
-									{!loadingOperators &&
-										formData.provider ===
-										"3" &&
-										operatorOptions.length ===
-										0 &&
-										formData.countryId &&
-										formData.serviceId && (
-											<p className="text-xs text-muted-foreground">
-												No servers listed for this
-												country. An admin must run
-												Provider 3 access sync for
-												this service, or choose
-												another country.
-											</p>
-										)}
-								</div>
-							)}
 
 							{/* Balance Warning */}
 							{user.balance < estimatedPrice &&
@@ -1229,13 +950,7 @@ export default function PhoneNumberTab({
 								disabled={
 									submitting ||
 									pricingLoading ||
-									user.balance < estimatedPrice ||
-									loadingOperators ||
-									(formData.provider === "3" &&
-										(!formData.server ||
-											String(
-												formData.server,
-											).trim() === ""))
+									user.balance < estimatedPrice
 								}
 							>
 								{submitting ? (
@@ -1376,13 +1091,6 @@ export default function PhoneNumberTab({
 																Provider{" "}
 																{order.provider}
 															</span>
-															{order.operatorSlotLabel && (
-																<span>
-																	{
-																		order.operatorSlotLabel
-																	}
-																</span>
-															)}
 															<span>
 																Order:{" "}
 																{order.orderId}

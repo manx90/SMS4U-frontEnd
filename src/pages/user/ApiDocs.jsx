@@ -468,25 +468,8 @@ export default function ApiDocs() {
 							name: "provider",
 							type: "string",
 							required: true,
-							description:
-								"Provider: 1, 2, or 3",
+							description: "Provider: 1 or 2 only",
 							example: "1",
-						},
-						{
-							name: "server",
-							type: "string",
-							required: false,
-							description:
-								"Required when provider is 3 (users): 1, 2, 3, … — same as `index` from GET /service/provider3/operators (Server 1 = 1). Raw `operator` is not accepted for clients.",
-							example: "2",
-						},
-						{
-							name: "operator",
-							type: "string",
-							required: false,
-							description:
-								"Admin only when provider is 3: raw operator id from the upstream API.",
-							example: "op3410",
 						},
 					],
 					response: {
@@ -500,6 +483,65 @@ export default function ApiDocs() {
 					example: `curl -X GET "${BASE_URL}/order/get-number?apiKey=${
 						user?.apiKey || "your_api_key"
 					}&country=0&serviceCode=tg&provider=1"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/get-number",
+					title: "Get Phone Number (Provider 3)",
+					description:
+						"Order a number via Provider 3 (separate from provider 1/2)",
+					icon: ShoppingCart,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "Your API key",
+							example:
+								user?.apiKey || "your_api_key",
+						},
+						{
+							name: "country",
+							type: "string",
+							required: true,
+							description: "Country (code or id)",
+							example: "0",
+						},
+						{
+							name: "serviceCode",
+							type: "string",
+							required: true,
+							description: "Service code",
+							example: "tg",
+						},
+						{
+							name: "server",
+							type: "string",
+							required: false,
+							description:
+								"Users: 1-based server index from GET /provider3/operators",
+							example: "1",
+						},
+						{
+							name: "operator",
+							type: "string",
+							required: false,
+							description:
+								"Admin: raw upstream operator id (optional alternative to server)",
+							example: "op3410",
+						},
+					],
+					response: {
+						state: "200",
+						msg: "success",
+						data: {
+							number: "1234567890",
+							orderId: "ABC123XYZ456",
+						},
+					},
+					example: `curl -X GET "${BASE_URL}/provider3/get-number?apiKey=${
+						user?.apiKey || "your_api_key"
+					}&country=0&serviceCode=tg&server=1"`,
 				},
 				{
 					method: "GET",

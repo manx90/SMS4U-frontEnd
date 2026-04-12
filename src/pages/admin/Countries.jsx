@@ -51,7 +51,6 @@ export default function Countries() {
 		code_country: "",
 		provider1: "",
 		provider2: "",
-		provider3: "",
 	});
 
 	useEffect(() => {
@@ -92,7 +91,6 @@ export default function Countries() {
 			code_country: "",
 			provider1: "",
 			provider2: "",
-			provider3: "",
 		});
 		setDialogOpen(true);
 	};
@@ -104,9 +102,6 @@ export default function Countries() {
 			code_country: country.code_country ?? "",
 			provider1: String(country.provider1 ?? ""),
 			provider2: String(country.provider2 ?? ""),
-			provider3: country.provider3
-				? String(country.provider3)
-				: "",
 		});
 		setDialogOpen(true);
 	};
@@ -211,7 +206,6 @@ export default function Countries() {
 								<TableHead>Code</TableHead>
 								<TableHead>Provider 1</TableHead>
 								<TableHead>Provider 2</TableHead>
-								<TableHead>Provider 3 (ISO)</TableHead>
 								<TableHead className="text-right">
 									Actions
 								</TableHead>
@@ -244,11 +238,6 @@ export default function Countries() {
 									<TableCell>
 										<code className="text-xs bg-muted px-2 py-1 rounded">
 											{country.provider2}
-										</code>
-									</TableCell>
-									<TableCell>
-										<code className="text-xs bg-muted px-2 py-1 rounded">
-											{country.provider3 || "—"}
 										</code>
 									</TableCell>
 									<TableCell className="text-right">
@@ -350,25 +339,6 @@ export default function Countries() {
 									}
 									required
 								/>
-							</div>
-							<div className="space-y-2">
-								<Label>
-									Provider 3 country code (ISO)
-								</Label>
-								<Input
-									value={formData.provider3}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											provider3: e.target.value,
-										})
-									}
-									placeholder="e.g. IT, US (optional)"
-								/>
-								<p className="text-xs text-muted-foreground">
-									Used by the third SMS provider API.
-									Leave empty if unused.
-								</p>
 							</div>
 						</div>
 						<DialogFooter>

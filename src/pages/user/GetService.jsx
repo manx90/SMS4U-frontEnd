@@ -17,8 +17,9 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@/components/ui/tabs";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, Server } from "lucide-react";
 import PhoneNumberTab from "./GetServiceTabs/PhoneNumberTab";
+import Provider3Tab from "./GetServiceTabs/Provider3Tab";
 import EmailTab from "./GetServiceTabs/EmailTab";
 
 export default function GetService() {
@@ -72,13 +73,20 @@ export default function GetService() {
 				onValueChange={setActiveTab}
 				className="space-y-6"
 			>
-				<TabsList className="grid w-full max-w-md grid-cols-2">
+				<TabsList className="grid w-full max-w-2xl grid-cols-3">
 					<TabsTrigger
 						value="phone"
 						className="flex items-center gap-2"
 					>
 						<Phone className="h-4 w-4" />
 						Phone Number
+					</TabsTrigger>
+					<TabsTrigger
+						value="provider3"
+						className="flex items-center gap-2"
+					>
+						<Server className="h-4 w-4" />
+						Provider 3
 					</TabsTrigger>
 					<TabsTrigger
 						value="email"
@@ -94,6 +102,15 @@ export default function GetService() {
 						user={user}
 						countries={countries}
 						services={services}
+						loading={loading}
+						updateUserBalance={updateUserBalance}
+					/>
+				</TabsContent>
+
+				<TabsContent value="provider3">
+					<Provider3Tab
+						user={user}
+						countries={countries}
 						loading={loading}
 						updateUserBalance={updateUserBalance}
 					/>

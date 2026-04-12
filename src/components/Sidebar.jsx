@@ -27,6 +27,8 @@ const routePrefetchMap = {
 	"/admin/dashboard": () => import("../pages/admin/Dashboard"),
 	"/admin/users": () => import("../pages/admin/Users"),
 	"/admin/services": () => import("../pages/admin/Services"),
+	"/admin/provider3-config": () =>
+		import("../pages/admin/Provider3Config"),
 	"/admin/countries": () => import("../pages/admin/Countries"),
 	"/admin/pricing": () => import("../pages/admin/Pricing"),
 	"/admin/orders": () => import("../pages/admin/Orders"),
@@ -69,6 +71,11 @@ const adminNavItems = [
 				name: "Services",
 				icon: Package,
 				path: "/admin/services",
+			},
+			{
+				name: "Provider 3",
+				icon: Server,
+				path: "/admin/provider3-config",
 			},
 			{
 				name: "Countries",

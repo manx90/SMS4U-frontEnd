@@ -31,6 +31,9 @@ const Users = lazy(() =>
 const Services = lazy(() =>
 	import("./pages/admin/Services"),
 );
+const Provider3Config = lazy(() =>
+	import("./pages/admin/Provider3Config"),
+);
 const Countries = lazy(() =>
 	import("./pages/admin/Countries"),
 );
@@ -133,6 +136,10 @@ function App() {
 								<Route
 									path="services"
 									element={<Services />}
+								/>
+								<Route
+									path="provider3-config"
+									element={<Provider3Config />}
 								/>
 								<Route
 									path="countries"

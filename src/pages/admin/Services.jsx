@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { serviceApi } from "../../services/api";
+import {
+	serviceApi,
+	provider3Api,
+} from "../../services/api";
 import {
 	Card,
 	CardContent,
@@ -51,7 +54,6 @@ export default function Services() {
 		code: "",
 		provider1: "",
 		provider2: "",
-		provider3: "",
 	});
 	const [syncForm, setSyncForm] = useState({
 		serviceCode: "",
@@ -101,7 +103,6 @@ export default function Services() {
 			code: "",
 			provider1: "",
 			provider2: "",
-			provider3: "",
 		});
 		setDialogOpen(true);
 	};
@@ -114,7 +115,6 @@ export default function Services() {
 			code: service.code || "",
 			provider1: service.provider1 || "",
 			provider2: service.provider2 || "",
-			provider3: service.provider3 || "",
 		});
 		setDialogOpen(true);
 	};
@@ -176,7 +176,7 @@ export default function Services() {
 		}
 		setSyncing(true);
 		try {
-			const res = await serviceApi.provider3AccessSync({
+			const res = await provider3Api.provider3AccessSync({
 				serviceCode: code,
 				serviceName: syncForm.serviceName?.trim() || undefined,
 			});
@@ -209,12 +209,12 @@ export default function Services() {
 		setSyncingAll(true);
 		try {
 			const res =
-				await serviceApi.provider3AccessSyncAll();
+				await provider3Api.provider3AccessSyncAll();
 			if (res.state === "200") {
 				const d = res.data;
 				if (d?.skipped && d?.reason === "no_provider3_services") {
 					toast.info(
-						"No services with Provider 3 configured — set provider3 on a service first.",
+						"No Provider 3 config rows — add entries in Provider 3 admin.",
 					);
 				} else if (d?.ok != null || d?.failed != null) {
 					toast.success(
@@ -339,14 +339,6 @@ export default function Services() {
 										{service.provider2 || "N/A"}
 									</code>
 								</div>
-								<div className="flex items-center justify-between text-sm">
-									<span className="text-muted-foreground">
-										Provider 3:
-									</span>
-									<code className="bg-muted px-2 py-1 rounded text-xs max-w-[140px] truncate">
-										{service.provider3 || "N/A"}
-									</code>
-								</div>
 							</div>
 							<div className="flex gap-2 pt-2">
 								<Button
@@ -445,7 +437,7 @@ export default function Services() {
 										serviceName: e.target.value,
 									})
 								}
-								placeholder="Defaults to service name / provider3"
+								placeholder="Defaults to config upstream name / service name"
 							/>
 						</div>
 						<Button
@@ -544,23 +536,6 @@ export default function Services() {
 											provider2: e.target.value,
 										})
 									}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="provider3">
-									Provider 3 API name
-								</Label>
-								<Input
-									id="provider3"
-									name="provider3"
-									value={formData.provider3}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											provider3: e.target.value,
-										})
-									}
-									placeholder="Accessinfo / API service name (optional)"
 								/>
 							</div>
 						</div>
