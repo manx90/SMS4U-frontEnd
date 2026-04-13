@@ -97,6 +97,8 @@ export default function Provider3Tab({
 		useState([]);
 	const [loadingOperators, setLoadingOperators] =
 		useState(false);
+	const [resolvedOperatorName, setResolvedOperatorName] =
+		useState("");
 	const shouldFocusServerRef = useRef(false);
 
 	const serviceDisplayNameByKey = useMemo(() => {
@@ -194,12 +196,13 @@ export default function Provider3Tab({
 
 	useEffect(() => {
 		let cancelled = false;
-		async function loadOperators() {
+		async function loadOperatorCount() {
 			if (
 				!formData.countryId ||
 				!formData.serviceId
 			) {
 				setOperatorOptions([]);
+				setResolvedOperatorName("");
 				return;
 			}
 			const cfg =
@@ -212,6 +215,7 @@ export default function Provider3Tab({
 				cfg.price <= 0
 			) {
 				setOperatorOptions([]);
+				setResolvedOperatorName("");
 				return;
 			}
 			const countryMeta = countries.find(
@@ -224,43 +228,32 @@ export default function Provider3Tab({
 				"";
 			if (!String(countryParam).trim()) {
 				setOperatorOptions([]);
+				setResolvedOperatorName("");
 				return;
 			}
 			setLoadingOperators(true);
+			setResolvedOperatorName("");
 			try {
 				const res =
-					await provider3Api.getProvider3Operators(
+					await provider3Api.getProvider3OperatorsCount(
 						String(cfg.serviceCode),
 						String(countryParam).trim(),
 					);
 				if (cancelled) return;
-				if (
-					res.state === "200" &&
-					Array.isArray(res.data)
-				) {
-					const normalized = res.data.map(
-						(row, idx) => {
-							if (
-								row &&
-								row.label != null &&
-								row.index != null
-							) {
-								return {
-									label: String(row.label),
-									index: Number(row.index),
-								};
-							}
-							const n = idx + 1;
-							return {
-								label: `Server ${n}`,
-								index: n,
-							};
-						},
-					);
-					setOperatorOptions(normalized);
-				} else {
-					setOperatorOptions([]);
-				}
+				const count =
+					res?.state === "200" &&
+					res?.data != null &&
+					typeof res.data.count === "number"
+						? res.data.count
+						: 0;
+				const normalized = Array.from(
+					{ length: Math.max(0, count) },
+					(_, i) => ({
+						label: `Server ${i + 1}`,
+						index: i + 1,
+					}),
+				);
+				setOperatorOptions(normalized);
 			} catch (e) {
 				console.error(e);
 				if (!cancelled) setOperatorOptions([]);
@@ -268,11 +261,79 @@ export default function Provider3Tab({
 				if (!cancelled) setLoadingOperators(false);
 			}
 		}
-		loadOperators();
+		loadOperatorCount();
 		return () => {
 			cancelled = true;
 		};
 	}, [
+		formData.countryId,
+		formData.serviceId,
+		pricingByServiceKey,
+		countries,
+	]);
+
+	useEffect(() => {
+		let cancelled = false;
+		async function loadOperatorForServer() {
+			if (
+				!formData.countryId ||
+				!formData.serviceId ||
+				!formData.server ||
+				String(formData.server).trim() === ""
+			) {
+				setResolvedOperatorName("");
+				return;
+			}
+			const cfg =
+				pricingByServiceKey[
+					formData.serviceId.toLowerCase()
+				];
+			if (!cfg?.serviceCode) {
+				setResolvedOperatorName("");
+				return;
+			}
+			const countryMeta = countries.find(
+				(c) =>
+					countryFormKey(c) === formData.countryId,
+			);
+			const countryParam =
+				countryMeta?.code ??
+				countryMeta?.code_country ??
+				"";
+			if (!String(countryParam).trim()) {
+				setResolvedOperatorName("");
+				return;
+			}
+			setResolvedOperatorName("");
+			try {
+				const res =
+					await provider3Api.getProvider3Operator(
+						String(cfg.serviceCode),
+						String(countryParam).trim(),
+						formData.server,
+					);
+				if (cancelled) return;
+				if (
+					res?.state === "200" &&
+					res?.data?.operator != null
+				) {
+					setResolvedOperatorName(
+						String(res.data.operator),
+					);
+				} else {
+					setResolvedOperatorName("");
+				}
+			} catch (e) {
+				console.error(e);
+				if (!cancelled) setResolvedOperatorName("");
+			}
+		}
+		loadOperatorForServer();
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		formData.server,
 		formData.countryId,
 		formData.serviceId,
 		pricingByServiceKey,
@@ -418,6 +479,26 @@ export default function Provider3Tab({
 				setSubmitting(false);
 				return;
 			}
+			let operatorLabel = resolvedOperatorName;
+			if (
+				!operatorLabel &&
+				formData.server &&
+				String(formData.server).trim() !== ""
+			) {
+				const opRes =
+					await provider3Api.getProvider3Operator(
+						String(cfg.serviceCode),
+						String(countryParam).trim(),
+						formData.server,
+					);
+				if (
+					opRes?.state === "200" &&
+					opRes?.data?.operator != null
+				) {
+					operatorLabel = String(opRes.data.operator);
+				}
+			}
+
 			const response =
 				await provider3Api.getProvider3Number(
 					countryParam,
@@ -428,11 +509,13 @@ export default function Provider3Tab({
 				response.state === "200" &&
 				response.data
 			) {
-				const serverLabel = operatorOptions.find(
-					(o) =>
-						String(o.index) ===
-						String(formData.server),
-				)?.label;
+				const serverLabel =
+					operatorLabel ||
+					operatorOptions.find(
+						(o) =>
+							String(o.index) ===
+							String(formData.server),
+					)?.label;
 				const newOrder = {
 					orderId:
 						response.data.publicId ||
@@ -731,6 +814,10 @@ export default function Provider3Tab({
 												...formData,
 												server: v,
 											});
+											if (!v)
+												setResolvedOperatorName(
+													"",
+												);
 										}}
 										disabled={
 											operatorOptions.length ===

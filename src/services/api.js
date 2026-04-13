@@ -376,6 +376,46 @@ export const provider3Api = {
 		return response;
 	},
 
+	getProvider3OperatorsCount: async (
+		serviceCode,
+		country,
+		interval,
+	) => {
+		const params = { serviceCode, country };
+		if (
+			interval != null &&
+			String(interval).trim() !== ""
+		) {
+			params.interval = String(interval).trim();
+		}
+		return await api.get(
+			"/provider3/operators-count",
+			{ params },
+		);
+	},
+
+	getProvider3Operator: async (
+		serviceCode,
+		country,
+		server,
+		interval,
+	) => {
+		const params = {
+			serviceCode,
+			country,
+			server: String(server),
+		};
+		if (
+			interval != null &&
+			String(interval).trim() !== ""
+		) {
+			params.interval = String(interval).trim();
+		}
+		return await api.get("/provider3/operator", {
+			params,
+		});
+	},
+
 	provider3AccessSync: async ({
 		serviceCode,
 		serviceName,
