@@ -469,6 +469,55 @@ export const provider3Api = {
 		return response;
 	},
 
+	getProvider3Message: async (orderId) => {
+		const response = await api.get(
+			"/provider3/get-message",
+			{
+				params: { orderId },
+			},
+		);
+		return response;
+	},
+
+	countriesByService: async (
+		serviceCode,
+		interval,
+	) => {
+		const params = { serviceCode };
+		if (
+			interval != null &&
+			String(interval).trim() !== ""
+		) {
+			params.interval = String(interval).trim();
+		}
+		return await api.get(
+			"/provider3/countries-by-service",
+			{ params },
+		);
+	},
+
+	getCatalogCountries: async () => {
+		return await api.get("/provider3/catalog/countries");
+	},
+
+	getCatalogServices: async (countryId) => {
+		return await api.get("/provider3/catalog/services", {
+			params: { countryId },
+		});
+	},
+
+	adminCountryCreate: async ({ country, code_country }) => {
+		return await api.get("/provider3/admin/country-create", {
+			params: { country, code_country },
+		});
+	},
+
+	adminServiceCreate: async ({ servicename, code }) => {
+		return await api.get("/provider3/admin/service-create", {
+			params: { servicename, code },
+		});
+	},
+
 	configList: async () => {
 		return await api.get("/provider3/config");
 	},

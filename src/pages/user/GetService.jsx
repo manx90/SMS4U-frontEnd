@@ -110,7 +110,6 @@ export default function GetService() {
 				<TabsContent value="provider3">
 					<Provider3Tab
 						user={user}
-						countries={countries}
 						loading={loading}
 						updateUserBalance={updateUserBalance}
 					/>

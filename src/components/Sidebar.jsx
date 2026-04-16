@@ -120,6 +120,11 @@ const adminNavItems = [
 		icon: CreditCard,
 		path: "/admin/payments",
 	},
+	{
+		name: "API Docs",
+		icon: Book,
+		path: "/admin/api-docs",
+	},
 ];
 
 // User navigation structure

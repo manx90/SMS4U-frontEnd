@@ -63,19 +63,25 @@ function focusElementById(id) {
 	});
 }
 
-function countryFormKey(country) {
+/** Country option value + get-number `country` param: code only (never id or name). */
+function countryCodeKey(country) {
 	if (!country) return "";
-	const c = country.code ?? country.code_country;
-	if (c != null && String(c).trim() !== "")
-		return String(c).trim().toLowerCase();
-	return String(country.name || "")
-		.toLowerCase()
-		.trim();
+	const raw =
+		country.code_country ?? country.code;
+	if (raw == null || String(raw).trim() === "")
+		return "";
+	return String(raw).trim().toLowerCase();
+}
+
+function countryCodeForApi(country) {
+	if (!country) return "";
+	const raw =
+		country.code_country ?? country.code;
+	return String(raw ?? "").trim();
 }
 
 export default function Provider3Tab({
 	user,
-	countries,
 	loading,
 	updateUserBalance,
 }) {
@@ -100,6 +106,9 @@ export default function Provider3Tab({
 	const [resolvedOperatorName, setResolvedOperatorName] =
 		useState("");
 	const shouldFocusServerRef = useRef(false);
+	const [p3Countries, setP3Countries] = useState([]);
+	const [catalogLoading, setCatalogLoading] =
+		useState(true);
 
 	const serviceDisplayNameByKey = useMemo(() => {
 		const m = {};
@@ -143,6 +152,42 @@ export default function Provider3Tab({
 
 	const estimatedPrice = selectedPriceConfig?.price ?? 0;
 
+	const catalogCountriesWithCode = useMemo(
+		() =>
+			p3Countries.filter(
+				(c) => countryCodeKey(c) !== "",
+			),
+		[p3Countries],
+	);
+
+	useEffect(() => {
+		let cancelled = false;
+		async function loadCatalog() {
+			setCatalogLoading(true);
+			try {
+				const res =
+					await provider3Api.getCatalogCountries();
+				if (cancelled) return;
+				if (
+					res?.state === "200" &&
+					Array.isArray(res.data)
+				) {
+					setP3Countries(res.data);
+				} else {
+					setP3Countries([]);
+				}
+			} catch {
+				if (!cancelled) setP3Countries([]);
+			} finally {
+				if (!cancelled) setCatalogLoading(false);
+			}
+		}
+		loadCatalog();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
 	useEffect(() => {
 		let cancelled = false;
 		async function load() {
@@ -150,9 +195,9 @@ export default function Provider3Tab({
 				setP3Rows([]);
 				return;
 			}
-			const countryRow = countries.find(
+			const countryRow = p3Countries.find(
 				(c) =>
-					countryFormKey(c) === formData.countryId,
+					countryCodeKey(c) === formData.countryId,
 			);
 			const countryDbId = countryRow?.id;
 			if (countryDbId == null) {
@@ -184,7 +229,7 @@ export default function Provider3Tab({
 		return () => {
 			cancelled = true;
 		};
-	}, [formData.countryId, countries]);
+	}, [formData.countryId, p3Countries]);
 
 	useEffect(() => {
 		if (!shouldFocusServerRef.current) return;
@@ -218,15 +263,13 @@ export default function Provider3Tab({
 				setResolvedOperatorName("");
 				return;
 			}
-			const countryMeta = countries.find(
+			const countryMeta = p3Countries.find(
 				(c) =>
-					countryFormKey(c) === formData.countryId,
+					countryCodeKey(c) === formData.countryId,
 			);
 			const countryParam =
-				countryMeta?.code ??
-				countryMeta?.code_country ??
-				"";
-			if (!String(countryParam).trim()) {
+				countryCodeForApi(countryMeta);
+			if (!countryParam) {
 				setOperatorOptions([]);
 				setResolvedOperatorName("");
 				return;
@@ -237,7 +280,7 @@ export default function Provider3Tab({
 				const res =
 					await provider3Api.getProvider3OperatorsCount(
 						String(cfg.serviceCode),
-						String(countryParam).trim(),
+						countryParam,
 					);
 				if (cancelled) return;
 				const count =
@@ -269,7 +312,7 @@ export default function Provider3Tab({
 		formData.countryId,
 		formData.serviceId,
 		pricingByServiceKey,
-		countries,
+		p3Countries,
 	]);
 
 	useEffect(() => {
@@ -292,15 +335,13 @@ export default function Provider3Tab({
 				setResolvedOperatorName("");
 				return;
 			}
-			const countryMeta = countries.find(
+			const countryMeta = p3Countries.find(
 				(c) =>
-					countryFormKey(c) === formData.countryId,
+					countryCodeKey(c) === formData.countryId,
 			);
 			const countryParam =
-				countryMeta?.code ??
-				countryMeta?.code_country ??
-				"";
-			if (!String(countryParam).trim()) {
+				countryCodeForApi(countryMeta);
+			if (!countryParam) {
 				setResolvedOperatorName("");
 				return;
 			}
@@ -309,7 +350,7 @@ export default function Provider3Tab({
 				const res =
 					await provider3Api.getProvider3Operator(
 						String(cfg.serviceCode),
-						String(countryParam).trim(),
+						countryParam,
 						formData.server,
 					);
 				if (cancelled) return;
@@ -337,7 +378,7 @@ export default function Provider3Tab({
 		formData.countryId,
 		formData.serviceId,
 		pricingByServiceKey,
-		countries,
+		p3Countries,
 	]);
 
 	useEffect(() => {
@@ -394,9 +435,10 @@ export default function Provider3Tab({
 	const handleCheckMessage = async (orderId) => {
 		setCheckingOrderId(orderId);
 		try {
-			const response = await orderApi.getMessage(
-				orderId,
-			);
+			const response =
+				await provider3Api.getProvider3Message(
+					orderId,
+				);
 			if (
 				response.code === 200 &&
 				response.data
@@ -465,9 +507,9 @@ export default function Provider3Tab({
 				setSubmitting(false);
 				return;
 			}
-			const countryMeta = countries.find(
+			const countryMeta = p3Countries.find(
 				(c) =>
-					countryFormKey(c) === formData.countryId,
+					countryCodeKey(c) === formData.countryId,
 			);
 			const countryParam = String(
 				countryMeta?.code ??
@@ -565,8 +607,8 @@ export default function Provider3Tab({
 		}
 	};
 
-	const selectedCountry = countries.find(
-		(c) => countryFormKey(c) === formData.countryId,
+	const selectedCountry = p3Countries.find(
+		(c) => countryCodeKey(c) === formData.countryId,
 	);
 
 	return (
@@ -585,6 +627,27 @@ export default function Provider3Tab({
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
+						{!catalogLoading &&
+							p3Countries.length === 0 && (
+								<Alert
+									variant="destructive"
+									className="mb-4"
+								>
+									<AlertCircle className="h-4 w-4" />
+									<AlertDescription>
+										No Provider 3 catalog yet. An
+										admin must add at least one
+										country+service+price in{" "}
+										<strong>
+											Provider 3 configuration
+										</strong>
+										. The country list here only
+										shows countries that appear in
+										that config (not all system
+										countries).
+									</AlertDescription>
+								</Alert>
+							)}
 						<form
 							onSubmit={handleSubmit}
 							className="space-y-6"
@@ -604,9 +667,13 @@ export default function Provider3Tab({
 											variant="outline"
 											role="combobox"
 											className="w-full justify-between"
-											disabled={loading}
+											disabled={
+												loading ||
+												catalogLoading
+											}
 										>
-											{loading ? (
+											{catalogLoading ||
+											loading ? (
 												<span className="flex items-center gap-2 text-muted-foreground">
 													<Loader2 className="h-4 w-4 animate-spin" />
 													Loading…
@@ -630,15 +697,16 @@ export default function Provider3Tab({
 													No country found.
 												</CommandEmpty>
 												<CommandGroup>
-													{countries.map(
+													{catalogCountriesWithCode.map(
 														(country) => {
 															const cKey =
-																countryFormKey(
+																countryCodeKey(
 																	country,
 																);
 															return (
 																<CommandItem
 																	key={
+																		country.id ??
 																		cKey
 																	}
 																	value={
@@ -647,6 +715,9 @@ export default function Provider3Tab({
 																	keywords={[
 																		country.name ||
 																			"",
+																		countryCodeForApi(
+																			country,
+																		),
 																	]}
 																	onSelect={(
 																		currentValue,
@@ -844,6 +915,17 @@ export default function Provider3Tab({
 										</SelectContent>
 									</Select>
 								)}
+								{!loadingOperators &&
+									formData.countryId &&
+									formData.serviceId &&
+									!loading &&
+									!pricingLoading && (
+										<p className="text-xs text-muted-foreground">
+											{operatorOptions.length > 0
+												? `${operatorOptions.length} server slot${operatorOptions.length === 1 ? "" : "s"} available for this country and service.`
+												: "No operator slots for this country and service — try another selection."}
+										</p>
+									)}
 							</div>
 
 							{user.balance < estimatedPrice &&
@@ -862,6 +944,8 @@ export default function Provider3Tab({
 								disabled={
 									submitting ||
 									pricingLoading ||
+									catalogLoading ||
+									p3Countries.length === 0 ||
 									user.balance <
 										estimatedPrice ||
 									loadingOperators ||
@@ -937,14 +1021,20 @@ export default function Provider3Tab({
 			<div className="mt-6">
 				<Card className="glass-card border-primary/10">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Phone className="h-5 w-5" />
-							Active Provider 3 Orders (
-							{activeOrders.length})
-						</CardTitle>
-						<CardDescription>
-							Pending numbers for Provider 3
-						</CardDescription>
+						<div className="flex items-center justify-between">
+							<div>
+								<CardTitle className="flex items-center gap-2">
+									<Phone className="h-5 w-5" />
+									Active Orders (
+									{activeOrders.length})
+								</CardTitle>
+								<CardDescription>
+									{activeOrders.length > 0
+										? "Check messages for your pending numbers"
+										: "No active orders yet. Order a number above to get started!"}
+								</CardDescription>
+							</div>
+						</div>
 					</CardHeader>
 					<CardContent>
 						{activeOrders.length > 0 ? (
@@ -954,68 +1044,137 @@ export default function Provider3Tab({
 										key={order.orderId}
 										className="border-2"
 									>
-										<CardContent className="p-4 space-y-4">
-											<div className="flex items-start justify-between">
-												<div>
-													<code className="text-2xl font-bold font-mono text-green-700">
-														{order.number}
-													</code>
-													<CopyButton
-														text={order.number}
-													/>
-													<div className="text-xs text-muted-foreground mt-1">
-														{order.country}{" "}
-														· {order.service} ·
-														Provider 3
-														{order.operatorSlotLabel
-															? ` · ${order.operatorSlotLabel}`
-															: ""}
+										<CardContent className="p-4">
+											<div className="space-y-4">
+												<div className="flex items-start justify-between">
+													<div className="space-y-1 flex-1">
+														<div className="flex items-center gap-2">
+															<code className="text-2xl font-bold font-mono text-green-700 dark:text-green-400">
+																{order.number}
+															</code>
+															<CopyButton
+																text={
+																	order.number
+																}
+															/>
+														</div>
+														<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+															<span className="flex items-center gap-1">
+																<Globe className="h-3 w-3" />
+																{order.country}
+															</span>
+															<span className="flex items-center gap-1">
+																<Package className="h-3 w-3" />
+																{order.service}
+															</span>
+															<span>
+																Provider 3
+																{order.operatorSlotLabel
+																	? ` · ${order.operatorSlotLabel}`
+																	: ""}
+															</span>
+															<span>
+																Order:{" "}
+																{
+																	order.orderId
+																}
+															</span>
+														</div>
 													</div>
+													{order.status ===
+														"received" && (
+														<CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+													)}
 												</div>
-												{order.status ===
-													"received" && (
-													<CheckCircle className="h-5 w-5 text-green-600" />
-												)}
-											</div>
-											{order.message ? (
-												<div className="p-3 bg-muted rounded border text-sm font-mono break-all">
-													{order.message}
-												</div>
-											) : (
-												<p className="text-xs text-muted-foreground">
-													Waiting for SMS…
-												</p>
-											)}
-											<Button
-												size="sm"
-												onClick={() =>
-													handleCheckMessage(
-														order.orderId,
-													)
-												}
-												disabled={
-													checkingOrderId ===
-														order.orderId ||
-													order.status ===
-														"received"
-												}
-											>
-												{checkingOrderId ===
-												order.orderId ? (
-													<Loader2 className="h-4 w-4 animate-spin" />
+
+												{order.message &&
+												order.message !==
+													"" ? (
+													<div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+														<div className="flex items-center gap-2 mb-2">
+															<CheckCircle className="h-4 w-4 text-green-600" />
+															<p className="font-semibold text-sm text-green-700 dark:text-green-400">
+																Message
+																Received!
+															</p>
+														</div>
+														<div className="p-3 bg-white dark:bg-gray-900 rounded border">
+															<p className="text-sm font-mono break-all">
+																{
+																	order.message
+																}
+															</p>
+														</div>
+														<div className="flex items-center justify-end gap-2 mt-2">
+															<CopyButton
+																text={
+																	order.message
+																}
+															/>
+														</div>
+													</div>
 												) : (
-													<RefreshCw className="h-4 w-4 mr-1" />
+													<div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded border border-yellow-200 dark:border-yellow-800">
+														<p className="text-xs text-yellow-800 dark:text-yellow-200">
+															⏳ Waiting for
+															message... Click
+															&quot;Check
+															Message&quot; to
+															check for incoming
+															SMS.
+														</p>
+													</div>
 												)}
-												Check Message
-											</Button>
+
+												<div className="flex gap-2">
+													<Button
+														onClick={() =>
+															handleCheckMessage(
+																order.orderId,
+															)
+														}
+														disabled={
+															checkingOrderId ===
+																order.orderId ||
+															order.status ===
+																"received"
+														}
+														className="flex-1"
+														size="sm"
+													>
+														{checkingOrderId ===
+														order.orderId ? (
+															<>
+																<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+																Checking...
+															</>
+														) : order.status ===
+															"received" ? (
+															<>
+																<CheckCircle className="mr-2 h-4 w-4" />
+																Received
+															</>
+														) : (
+															<>
+																<RefreshCw className="mr-2 h-4 w-4" />
+																Check Message
+															</>
+														)}
+													</Button>
+												</div>
+											</div>
 										</CardContent>
 									</Card>
 								))}
 							</div>
 						) : (
-							<p className="text-center text-muted-foreground py-8">
-								No active Provider 3 orders
-							</p>
+							<div className="text-center py-8 text-muted-foreground">
+								<p>No active orders yet.</p>
+								<p className="text-sm mt-2">
+									Order a number above to get
+									started!
+								</p>
+							</div>
 						)}
 					</CardContent>
 				</Card>

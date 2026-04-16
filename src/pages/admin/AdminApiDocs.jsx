@@ -9,18 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "../../components/shared/CopyButton";
-import {
-	Book,
-	Code,
-} from "lucide-react";
+import { Book, Code, Shield } from "lucide-react";
 import {
 	BASE_URL,
 	CodeBlock,
 	EndpointCard,
 } from "../../components/api-docs/ApiDocComponents.jsx";
-import { buildUserApiSections } from "./apiDocsUserSections.js";
+import { buildUserApiSections } from "../user/apiDocsUserSections.js";
+import { buildAdminApiSections } from "./adminApiDocsSections.js";
 
-export default function ApiDocs() {
+export default function AdminApiDocs() {
 	const { user } = useAuth();
 	const [expandedSections, setExpandedSections] =
 		useState({});
@@ -32,10 +30,11 @@ export default function ApiDocs() {
 		}));
 	};
 
-	const apiSections = useMemo(
-		() => buildUserApiSections(user),
-		[user],
-	);
+	const apiSections = useMemo(() => {
+		const u = buildUserApiSections(user);
+		const a = buildAdminApiSections(user);
+		return [...u, ...a];
+	}, [user]);
 
 	return (
 		<div className="space-y-6 animate-in fade-in-50">
@@ -49,11 +48,12 @@ export default function ApiDocs() {
 								</div>
 								<div>
 									<h1 className="text-3xl font-bold tracking-tight">
-										API Documentation
+										Admin API documentation
 									</h1>
 									<p className="text-muted-foreground mt-1">
-										Complete guide to integrate
-										our SMS service API
+										All client endpoints plus
+										admin-only routes (JWT or
+										admin apiKey where supported)
 									</p>
 								</div>
 							</div>
@@ -66,10 +66,11 @@ export default function ApiDocs() {
 				<CardHeader>
 					<div className="flex items-center gap-2">
 						<Code className="h-5 w-5 text-primary" />
-						<CardTitle>Getting Started</CardTitle>
+						<CardTitle>Getting started (admin)</CardTitle>
 					</div>
 					<CardDescription>
-						Quick start guide to using our API
+						Base URL and authentication for admin
+						operations
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -88,34 +89,37 @@ export default function ApiDocs() {
 					<Separator />
 
 					<div>
-						<h4 className="font-semibold mb-2">
-							Authentication
-						</h4>
-						<p className="text-sm text-muted-foreground mb-3">
-							All API requests require your API
-							key. Include it as a query
-							parameter:
-						</p>
-						<div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-							<code className="flex-1 font-mono text-sm break-all">
-								?apiKey=
-								{user?.apiKey || "your_api_key"}
-							</code>
-							{user?.apiKey && (
-								<CopyButton text={user.apiKey} />
-							)}
+						<div className="flex items-center gap-2 mb-2">
+							<Shield className="h-4 w-4 text-primary" />
+							<h4 className="font-semibold">
+								Admin authentication
+							</h4>
 						</div>
+						<p className="text-sm text-muted-foreground mb-3">
+							After signing in to the dashboard,
+							send{" "}
+							<code className="text-xs">
+								Authorization: Bearer &lt;access_token&gt;
+							</code>
+							, or use an admin account&apos;s{" "}
+							<code className="text-xs">apiKey</code>{" "}
+							in the query string when the route
+							supports it.
+						</p>
+						<CodeBlock
+							code={`Authorization: Bearer <access_token>\n# or where applicable:\n?apiKey=${user?.apiKey || "your_admin_api_key"}`}
+							language="bash"
+						/>
 					</div>
 
 					<Separator />
 
 					<div>
 						<h4 className="font-semibold mb-2">
-							Response Format
+							Response shape
 						</h4>
 						<p className="text-sm text-muted-foreground mb-3">
-							All responses are in JSON format
-							with a consistent structure:
+							Same JSON envelope as the user API:
 						</p>
 						<CodeBlock
 							code={JSON.stringify(
@@ -180,11 +184,9 @@ export default function ApiDocs() {
 
 			<Card className="glass-card border-primary/10">
 				<CardHeader>
-					<CardTitle>
-						Common Error Codes
-					</CardTitle>
+					<CardTitle>Common error codes</CardTitle>
 					<CardDescription>
-						Understanding API error responses
+						Same semantics as the user API docs
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -192,27 +194,31 @@ export default function ApiDocs() {
 						{[
 							{
 								code: "200",
-								desc: "Success - Request completed successfully",
+								desc: "Success",
 							},
 							{
 								code: "202",
-								desc: "Pending - Message not received yet (check again)",
+								desc: "Pending",
 							},
 							{
 								code: "400",
-								desc: "Bad Request - Invalid parameters or insufficient balance",
+								desc: "Bad request or insufficient balance",
 							},
 							{
 								code: "401",
-								desc: "Unauthorized - Invalid API key",
+								desc: "Unauthorized — invalid JWT or apiKey",
+							},
+							{
+								code: "403",
+								desc: "Forbidden — not admin or insufficient permissions",
 							},
 							{
 								code: "404",
-								desc: "Not Found - Resource not found",
+								desc: "Not found",
 							},
 							{
 								code: "500",
-								desc: "Server Error - Internal server error",
+								desc: "Server error",
 							},
 						].map((error) => (
 							<div

@@ -56,6 +56,11 @@ export default function Provider3Config() {
 	});
 	const [saving, setSaving] = useState(false);
 	const [syncingAll, setSyncingAll] = useState(false);
+	const [qcCountry, setQcCountry] = useState("");
+	const [qcCode, setQcCode] = useState("");
+	const [qsName, setQsName] = useState("");
+	const [qsCode, setQsCode] = useState("");
+	const [quickSaving, setQuickSaving] = useState(false);
 
 	const load = async () => {
 		setLoading(true);
@@ -155,6 +160,68 @@ export default function Provider3Config() {
 		}
 	};
 
+	const handleQuickCountry = async () => {
+		if (!qcCountry.trim() || !qcCode.trim()) {
+			toast.error("Country name and ISO code required");
+			return;
+		}
+		setQuickSaving(true);
+		try {
+			const res = await provider3Api.adminCountryCreate({
+				country: qcCountry.trim(),
+				code_country: qcCode.trim(),
+			});
+			if (res.state === "201") {
+				toast.success("Country created (P3 path, no P1/P2)");
+				setQcCountry("");
+				setQcCode("");
+				const cRes = await countryApi.getAll();
+				if (cRes.state === "200" && Array.isArray(cRes.data)) {
+					setCountries(cRes.data);
+				}
+			} else {
+				toast.error(res.error || "Failed");
+			}
+		} catch (err) {
+			toast.error(
+				err?.error || err?.message || "Failed",
+			);
+		} finally {
+			setQuickSaving(false);
+		}
+	};
+
+	const handleQuickService = async () => {
+		if (!qsName.trim() || !qsCode.trim()) {
+			toast.error("Service name and code required");
+			return;
+		}
+		setQuickSaving(true);
+		try {
+			const res = await provider3Api.adminServiceCreate({
+				servicename: qsName.trim(),
+				code: qsCode.trim(),
+			});
+			if (res.state === "201") {
+				toast.success("Service created (P3 path, no P1/P2 ids)");
+				setQsName("");
+				setQsCode("");
+				const sRes = await serviceApi.getAll();
+				if (sRes.state === "200" && Array.isArray(sRes.data)) {
+					setServices(sRes.data);
+				}
+			} else {
+				toast.error(res.error || "Failed");
+			}
+		} catch (err) {
+			toast.error(
+				err?.error || err?.message || "Failed",
+			);
+		} finally {
+			setQuickSaving(false);
+		}
+	};
+
 	const handleSyncAll = async () => {
 		setSyncingAll(true);
 		try {
@@ -221,6 +288,130 @@ export default function Provider3Config() {
 					</Button>
 				</div>
 			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>
+						P3-only: create country / service
+					</CardTitle>
+					<CardDescription>
+						Uses{" "}
+						<code className="text-xs">
+							/provider3/admin/country-create
+						</code>{" "}
+						and{" "}
+						<code className="text-xs">
+							/provider3/admin/service-create
+						</code>{" "}
+						— no provider 1/2 fields. Then add a config row
+						below.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="grid gap-6 md:grid-cols-2">
+					<div className="space-y-2">
+						<Label>Country name</Label>
+						<Input
+							value={qcCountry}
+							onChange={(e) =>
+								setQcCountry(e.target.value)
+							}
+							placeholder="Italy"
+						/>
+						<Label>ISO code</Label>
+						<Input
+							value={qcCode}
+							onChange={(e) =>
+								setQcCode(e.target.value)
+							}
+							placeholder="IT"
+						/>
+						<Button
+							type="button"
+							variant="secondary"
+							disabled={quickSaving}
+							onClick={handleQuickCountry}
+						>
+							Create country
+						</Button>
+					</div>
+					<div className="space-y-2">
+						<Label>Service name</Label>
+						<Input
+							value={qsName}
+							onChange={(e) =>
+								setQsName(e.target.value)
+							}
+							placeholder="WhatsApp"
+						/>
+						<Label>Service code</Label>
+						<Input
+							value={qsCode}
+							onChange={(e) =>
+								setQsCode(e.target.value)
+							}
+							placeholder="wa"
+						/>
+						<Button
+							type="button"
+							variant="secondary"
+							disabled={quickSaving}
+							onClick={handleQuickService}
+						>
+							Create service
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Admin API (Provider 3)</CardTitle>
+					<CardDescription>
+						Base URL +{" "}
+						<code className="text-xs">/api/v1</code>.
+						Header{" "}
+						<code className="text-xs">
+							Authorization: Bearer
+						</code>{" "}
+						(admin). المرجع الكامل: ملف المشروع{" "}
+						<code className="text-xs">
+							SMS4U/PROVIDER3_ADMIN_API.md
+						</code>
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-2 text-muted-foreground font-mono text-xs overflow-x-auto">
+					<p>
+						GET /provider3/config — list P3 price rows
+					</p>
+					<p>
+						GET
+						/provider3/config/create?countryId=&serviceId=&price=&upstreamCountryCode=&upstreamServiceName=
+					</p>
+					<p>
+						GET
+						/provider3/config/update?id=&price=&upstreamCountryCode=&upstreamServiceName=
+					</p>
+					<p>GET /provider3/config/remove?id=</p>
+					<p>
+						GET /provider3/access-sync?serviceCode=&interval=&serviceName=
+					</p>
+					<p>GET /provider3/access-sync-all</p>
+					<p>
+						GET /provider3/admin/country-create?country=&code_country=
+					</p>
+					<p>
+						GET
+						/provider3/admin/service-create?servicename=&code=
+					</p>
+					<p>
+						GET /provider3/catalog/countries — countries
+						in P3 config (user)
+					</p>
+					<p>
+						GET /provider3/catalog/services?countryId=
+					</p>
+				</CardContent>
+			</Card>
 
 			<Card>
 				<CardHeader>
