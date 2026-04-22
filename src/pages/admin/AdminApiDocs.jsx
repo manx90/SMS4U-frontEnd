@@ -51,9 +51,9 @@ export default function AdminApiDocs() {
 										Admin API documentation
 									</h1>
 									<p className="text-muted-foreground mt-1">
-										All client endpoints plus
-										admin-only routes (JWT or
-										admin apiKey where supported)
+										All client endpoints plus admin routes
+										— authenticate with an admin account
+										apiKey
 									</p>
 								</div>
 							</div>
@@ -69,8 +69,7 @@ export default function AdminApiDocs() {
 						<CardTitle>Getting started (admin)</CardTitle>
 					</div>
 					<CardDescription>
-						Base URL and authentication for admin
-						operations
+						Base URL and admin authentication (admin apiKey)
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -92,22 +91,21 @@ export default function AdminApiDocs() {
 						<div className="flex items-center gap-2 mb-2">
 							<Shield className="h-4 w-4 text-primary" />
 							<h4 className="font-semibold">
-								Admin authentication
+								Admin authentication — apiKey only
 							</h4>
 						</div>
 						<p className="text-sm text-muted-foreground mb-3">
-							After signing in to the dashboard,
-							send{" "}
+							Use <code className="text-xs">apiKey</code> for an
+							account with role admin (query string,{" "}
+							<code className="text-xs">X-Api-Key</code>, or{" "}
 							<code className="text-xs">
-								Authorization: Bearer &lt;access_token&gt;
+								Authorization: ApiKey
 							</code>
-							, or use an admin account&apos;s{" "}
-							<code className="text-xs">apiKey</code>{" "}
-							in the query string when the route
-							supports it.
+							). JWT is for the dashboard session, not for API
+							calls.
 						</p>
 						<CodeBlock
-							code={`Authorization: Bearer <access_token>\n# or where applicable:\n?apiKey=${user?.apiKey || "your_admin_api_key"}`}
+							code={`curl "${BASE_URL}/users/all?apiKey=${user?.apiKey || "your_admin_api_key"}`}
 							language="bash"
 						/>
 					</div>
@@ -167,6 +165,7 @@ export default function AdminApiDocs() {
 								(endpoint, idx) => (
 									<EndpointCard
 										key={`${section.id}-${idx}`}
+										endpointKey={`${section.id}-${idx}`}
 										{...endpoint}
 										expandedSections={
 											expandedSections
@@ -186,7 +185,10 @@ export default function AdminApiDocs() {
 				<CardHeader>
 					<CardTitle>Common error codes</CardTitle>
 					<CardDescription>
-						Same semantics as the user API docs
+						401 without apiKey:{" "}
+						<code className="text-xs">
+							{`{"error":"Unauthorized","message":"apiKey is required"}`}
+						</code>
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -206,11 +208,11 @@ export default function AdminApiDocs() {
 							},
 							{
 								code: "401",
-								desc: "Unauthorized — invalid JWT or apiKey",
+								desc: "Missing or invalid apiKey",
 							},
 							{
 								code: "403",
-								desc: "Forbidden — not admin or insufficient permissions",
+								desc: "Not admin or insufficient permissions",
 							},
 							{
 								code: "404",

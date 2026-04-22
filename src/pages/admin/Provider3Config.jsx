@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-	provider3Api,
-	countryApi,
-	serviceApi,
-} from "../../services/api";
+import { provider3Api } from "../../services/api";
 import {
 	Card,
 	CardContent,
@@ -67,8 +63,8 @@ export default function Provider3Config() {
 		try {
 			const [cfg, cRes, sRes] = await Promise.all([
 				provider3Api.configList(),
-				countryApi.getAll(),
-				serviceApi.getAll(),
+				provider3Api.adminP3CatalogCountries(),
+				provider3Api.adminP3CatalogServices(),
 			]);
 			if (cfg.state === "200" && Array.isArray(cfg.data)) {
 				setRows(cfg.data);
@@ -206,7 +202,8 @@ export default function Provider3Config() {
 				toast.success("Service created (P3 path, no P1/P2 ids)");
 				setQsName("");
 				setQsCode("");
-				const sRes = await serviceApi.getAll();
+				const sRes =
+					await provider3Api.adminP3CatalogServices();
 				if (sRes.state === "200" && Array.isArray(sRes.data)) {
 					setServices(sRes.data);
 				}

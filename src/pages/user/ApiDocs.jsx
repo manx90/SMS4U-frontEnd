@@ -52,8 +52,8 @@ export default function ApiDocs() {
 										API Documentation
 									</h1>
 									<p className="text-muted-foreground mt-1">
-										Complete guide to integrate
-										our SMS service API
+										Developer guide — SMS, email, and
+										API integration (apiKey auth)
 									</p>
 								</div>
 							</div>
@@ -69,7 +69,8 @@ export default function ApiDocs() {
 						<CardTitle>Getting Started</CardTitle>
 					</div>
 					<CardDescription>
-						Quick start guide to using our API
+						Quick start — base URL, authentication, response
+						shape
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -89,12 +90,15 @@ export default function ApiDocs() {
 
 					<div>
 						<h4 className="font-semibold mb-2">
-							Authentication
+							Authentication — apiKey only on the API
 						</h4>
 						<p className="text-sm text-muted-foreground mb-3">
-							All API requests require your API
-							key. Include it as a query
-							parameter:
+							Protected routes do not accept JWT on the server.
+							The web app may use JWT for session; for API calls
+							send <code className="text-xs">apiKey</code> (query,
+							header, or JSON body on POST). See the
+							&ldquo;Authentication — apiKey&rdquo; section
+							below.
 						</p>
 						<div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
 							<code className="flex-1 font-mono text-sm break-all">
@@ -111,11 +115,10 @@ export default function ApiDocs() {
 
 					<div>
 						<h4 className="font-semibold mb-2">
-							Response Format
+							Response format (typical)
 						</h4>
 						<p className="text-sm text-muted-foreground mb-3">
-							All responses are in JSON format
-							with a consistent structure:
+							JSON responses; many routes use:
 						</p>
 						<CodeBlock
 							code={JSON.stringify(
@@ -163,6 +166,7 @@ export default function ApiDocs() {
 								(endpoint, idx) => (
 									<EndpointCard
 										key={`${section.id}-${idx}`}
+										endpointKey={`${section.id}-${idx}`}
 										{...endpoint}
 										expandedSections={
 											expandedSections
@@ -181,10 +185,13 @@ export default function ApiDocs() {
 			<Card className="glass-card border-primary/10">
 				<CardHeader>
 					<CardTitle>
-						Common Error Codes
+						Common HTTP status codes
 					</CardTitle>
 					<CardDescription>
-						Understanding API error responses
+						401 when apiKey is missing:{" "}
+						<code className="text-xs">
+							{`{"error":"Unauthorized","message":"apiKey is required"}`}
+						</code>
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -192,27 +199,31 @@ export default function ApiDocs() {
 						{[
 							{
 								code: "200",
-								desc: "Success - Request completed successfully",
+								desc: "Success — request completed",
 							},
 							{
 								code: "202",
-								desc: "Pending - Message not received yet (check again)",
+								desc: "Pending — message not ready yet (retry)",
 							},
 							{
 								code: "400",
-								desc: "Bad Request - Invalid parameters or insufficient balance",
+								desc: "Bad request — invalid params or insufficient balance",
 							},
 							{
 								code: "401",
-								desc: "Unauthorized - Invalid API key",
+								desc: "Unauthorized — missing or invalid apiKey",
+							},
+							{
+								code: "403",
+								desc: "Forbidden — role not allowed for this route",
 							},
 							{
 								code: "404",
-								desc: "Not Found - Resource not found",
+								desc: "Not found",
 							},
 							{
 								code: "500",
-								desc: "Server Error - Internal server error",
+								desc: "Server error",
 							},
 						].map((error) => (
 							<div

@@ -21,10 +21,10 @@ export function buildAdminApiSections(user) {
 	return [
 		{
 			id: "admin-users",
-			title: "User management (admin)",
+			title: "User management — /users/*",
 			icon: Users,
 			description:
-				"`/users/*` routes — require an admin account (JWT or admin apiKey)",
+				"requireAdmin() — use an admin account apiKey.",
 			endpoints: [
 				{
 					method: "GET",
@@ -37,7 +37,7 @@ export function buildAdminApiSections(user) {
 						state: "200",
 						data: [{ id: 1, name: "…", role: "user" }],
 					},
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/users/all"`,
+					example: `curl "${BASE_URL}/users/all?apiKey=${key}"`,
 				},
 				{
 					method: "GET",
@@ -55,7 +55,7 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/users/1"`,
+					example: `curl "${BASE_URL}/users/1?apiKey=${key}"`,
 				},
 				{
 					method: "GET",
@@ -97,7 +97,7 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/users/create?name=demo&password=secret&email=a@b.com&role=user&balance=0"`,
+					example: `curl "${BASE_URL}/users/create?apiKey=${key}&name=demo&password=secret&email=a@b.com&role=user&balance=0"`,
 				},
 				{
 					method: "GET",
@@ -114,7 +114,7 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", message: "User updated" },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/users/update/1?balance=100"`,
+					example: `curl "${BASE_URL}/users/update/1?apiKey=${key}&balance=100"`,
 				},
 				{
 					method: "GET",
@@ -131,16 +131,16 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", message: "User deleted successfully" },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/users/delete?id=1"`,
+					example: `curl "${BASE_URL}/users/delete?apiKey=${key}&id=1"`,
 				},
 			],
 		},
 		{
 			id: "admin-country-service",
-			title: "Countries & services (admin)",
+			title: "Countries & services — /country/* & /service/*",
 			icon: Globe,
 			description:
-				"`/country/*` and `/service/*` — sensitive writes require admin",
+				"Sensitive writes — requireAdmin() and apiKey.",
 			endpoints: [
 				{
 					method: "GET",
@@ -175,17 +175,18 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/country/create?country=US&code_country=1"`,
+					example: `curl "${BASE_URL}/country/create?apiKey=${key}&country=US&code_country=1"`,
 				},
 				{
 					method: "GET",
 					path: "/country/update",
 					title: "Update country",
-					description: "Query: id, country, code_country, provider1, provider2",
+					description:
+						"Query: id, country, code_country, provider1, provider2",
 					icon: Globe,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/country/update?id=1&country=US&code_country=1&provider1=x&provider2=y"`,
+					example: `curl "${BASE_URL}/country/update?apiKey=${key}&id=1&country=US&code_country=1&provider1=x&provider2=y"`,
 				},
 				{
 					method: "GET",
@@ -202,35 +203,37 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", data: null },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/country/remove?id=1"`,
+					example: `curl "${BASE_URL}/country/remove?apiKey=${key}&id=1"`,
 				},
 				{
 					method: "GET",
 					path: "/service/create",
 					title: "Create service",
-					description: "Query: servicename, code, provider1, provider2",
+					description:
+						"Query: servicename, code, provider1, provider2",
 					icon: Package,
 					params: [],
 					response: { state: "201", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/service/create?servicename=WhatsApp&code=wa&provider1=a&provider2=b"`,
+					example: `curl "${BASE_URL}/service/create?apiKey=${key}&servicename=WhatsApp&code=wa&provider1=a&provider2=b"`,
 				},
 				{
 					method: "GET",
 					path: "/service/update",
 					title: "Update service",
-					description: "Query: id, servicename, code, provider1, provider2",
+					description:
+						"Query: id, servicename, code, provider1, provider2",
 					icon: Package,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/service/update?id=1&servicename=WhatsApp&code=wa"`,
+					example: `curl "${BASE_URL}/service/update?apiKey=${key}&id=1&servicename=WhatsApp&code=wa"`,
 				},
 			],
 		},
 		{
 			id: "admin-pricing",
-			title: "Country / service pricing (admin)",
+			title: "Pricing — /pricing/*",
 			icon: DollarSign,
-			description: "`/pricing/*` create, update, and remove",
+			description: "Create, update, and remove pricing rows",
 			endpoints: [
 				{
 					method: "GET",
@@ -241,17 +244,18 @@ export function buildAdminApiSections(user) {
 					icon: DollarSign,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/pricing/create?countryId=1&serviceId=2&priceProvider1=1.5&priceProvider2=2"`,
+					example: `curl "${BASE_URL}/pricing/create?apiKey=${key}&countryId=1&serviceId=2&priceProvider1=1.5&priceProvider2=2"`,
 				},
 				{
 					method: "GET",
 					path: "/pricing/update",
 					title: "Update pricing row",
-					description: "Query: id and priceProvider1 and/or priceProvider2",
+					description:
+						"Query: id and priceProvider1 and/or priceProvider2",
 					icon: DollarSign,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/pricing/update?id=1&priceProvider1=2"`,
+					example: `curl "${BASE_URL}/pricing/update?apiKey=${key}&id=1&priceProvider1=2"`,
 				},
 				{
 					method: "GET",
@@ -261,7 +265,7 @@ export function buildAdminApiSections(user) {
 					icon: DollarSign,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/pricing/remove?id=1"`,
+					example: `curl "${BASE_URL}/pricing/remove?apiKey=${key}&id=1"`,
 				},
 			],
 		},
@@ -270,13 +274,14 @@ export function buildAdminApiSections(user) {
 			title: "Provider 3 — admin",
 			icon: Server,
 			description:
-				"`/provider3/*` sync, configuration, and quick-create helpers",
+				"`p3_countries` / `p3_services` — config `countryId` / `serviceId` are P3 table ids.",
 			endpoints: [
 				{
 					method: "GET",
 					path: "/provider3/access-sync",
 					title: "Sync access for one service",
-					description: "serviceCode, interval, optional serviceName",
+					description:
+						"serviceCode must exist in p3_services; optional interval, serviceName",
 					icon: Server,
 					params: [
 						{
@@ -287,7 +292,7 @@ export function buildAdminApiSections(user) {
 						},
 					],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/access-sync?serviceCode=telegram"`,
+					example: `curl "${BASE_URL}/provider3/access-sync?apiKey=${key}&serviceCode=wa&interval=30min"`,
 				},
 				{
 					method: "GET",
@@ -297,58 +302,92 @@ export function buildAdminApiSections(user) {
 					icon: Server,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/access-sync-all"`,
+					example: `curl "${BASE_URL}/provider3/access-sync-all?apiKey=${key}"`,
 				},
 				{
 					method: "GET",
 					path: "/provider3/admin/country-create",
-					title: "Create country (P3-only path)",
-					description: "No P1/P2 fields — country, code_country",
+					title: "Create P3 country",
+					description: "Query: country, code_country",
 					icon: Globe,
 					params: [],
-					response: { state: "201", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/admin/country-create?country=X&code_country=xx"`,
+					response: {
+						state: "201",
+						data: {
+							name: "Italy",
+							code_country: "IT",
+							id: 1,
+						},
+					},
+					example: `curl "${BASE_URL}/provider3/admin/country-create?apiKey=${key}&country=Italy&code_country=IT"`,
 				},
 				{
 					method: "GET",
 					path: "/provider3/admin/service-create",
-					title: "Create service (P3-only path)",
+					title: "Create P3 service",
 					description: "servicename, code",
 					icon: Package,
 					params: [],
-					response: { state: "201", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/admin/service-create?servicename=X&code=x"`,
+					response: {
+						state: "201",
+						data: {
+							name: "WhatsApp",
+							code: "wa",
+							id: 2,
+						},
+					},
+					example: `curl "${BASE_URL}/provider3/admin/service-create?apiKey=${key}&servicename=WhatsApp&code=wa"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/admin/p3-catalog-countries",
+					title: "All P3 countries (full catalog)",
+					description: "All rows in p3_countries",
+					icon: Globe,
+					params: [],
+					response: { state: "200", data: [] },
+					example: `curl "${BASE_URL}/provider3/admin/p3-catalog-countries?apiKey=${key}"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/admin/p3-catalog-services",
+					title: "All P3 services (full catalog)",
+					description: "All rows in p3_services",
+					icon: Package,
+					params: [],
+					response: { state: "200", data: [] },
+					example: `curl "${BASE_URL}/provider3/admin/p3-catalog-services?apiKey=${key}"`,
 				},
 				{
 					method: "GET",
 					path: "/provider3/config",
 					title: "List Provider 3 config rows",
-					description: "All rows with relations",
+					description: "Pricing rows with p3Country / p3Service",
 					icon: Server,
 					params: [],
 					response: { state: "200", data: [] },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/config"`,
+					example: `curl "${BASE_URL}/provider3/config?apiKey=${key}"`,
 				},
 				{
 					method: "GET",
 					path: "/provider3/config/create",
 					title: "Create Provider 3 config row",
 					description:
-						"countryId, serviceId, price, upstreamCountryCode, upstreamServiceName",
+						"countryId & serviceId from P3 tables; price, upstream…",
 					icon: Server,
 					params: [],
 					response: { state: "201", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/config/create?countryId=1&serviceId=2&price=1&upstreamCountryCode=us&upstreamServiceName=telegram"`,
+					example: `curl "${BASE_URL}/provider3/config/create?apiKey=${key}&countryId=1&serviceId=2&price=1.5&upstreamCountryCode=IT&upstreamServiceName=WhatsApp"`,
 				},
 				{
 					method: "GET",
 					path: "/provider3/config/update",
 					title: "Update Provider 3 config row",
-					description: "id and optional price, upstreamCountryCode, upstreamServiceName",
+					description: "id and optional fields",
 					icon: Server,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/config/update?id=1&price=2"`,
+					example: `curl "${BASE_URL}/provider3/config/update?apiKey=${key}&id=1&price=2"`,
 				},
 				{
 					method: "GET",
@@ -358,22 +397,22 @@ export function buildAdminApiSections(user) {
 					icon: Server,
 					params: [],
 					response: { state: "200", data: {} },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/provider3/config/remove?id=1"`,
+					example: `curl "${BASE_URL}/provider3/config/remove?apiKey=${key}&id=1"`,
 				},
 			],
 		},
 		{
 			id: "admin-email-api",
-			title: "Email admin API",
+			title: "Email admin — /email-admin/*",
 			icon: Mail,
 			description:
-				"Prefix `/email-admin/` — requires JWT or admin apiKey; several handlers validate `apiKey` in the query string.",
+				"requireUser() then admin check in handler — send admin apiKey.",
 			endpoints: [
 				{
 					method: "GET",
 					path: "/email-admin/sites",
 					title: "List email sites",
-					description: "Full list (admin) — `apiKey` required for the admin check",
+					description: "Full list (admin)",
 					icon: Mail,
 					params: [
 						{
@@ -391,7 +430,7 @@ export function buildAdminApiSections(user) {
 					method: "GET",
 					path: "/email-admin/sites/create",
 					title: "Create email site",
-					description: "Additional params per API (name, status, …)",
+					description: "Additional params (name, status, …)",
 					icon: Mail,
 					params: [],
 					response: { state: "200", data: {} },
@@ -432,8 +471,8 @@ export function buildAdminApiSections(user) {
 				{
 					method: "GET",
 					path: "/email-admin/sync-availability",
-					title: "Sync email availability",
-					description: "Manual sync of account availability",
+					title: "Sync availability",
+					description: "Manual sync",
 					icon: Mail,
 					params: [],
 					response: { state: "200", data: {} },
@@ -443,15 +482,15 @@ export function buildAdminApiSections(user) {
 		},
 		{
 			id: "admin-order-ops",
-			title: "Orders — admin & debug",
+			title: "Orders — maintenance & debug",
 			icon: ShoppingCart,
-			description: "`/order/*` refunds, maintenance, and debug helpers",
+			description: "`/order/*` — refunds, eligibility, debug tools",
 			endpoints: [
 				{
 					method: "GET",
 					path: "/order/process-refunds",
 					title: "Process pending refunds",
-					description: "Requires admin apiKey in the request",
+					description: "Admin apiKey",
 					icon: ShoppingCart,
 					params: [
 						{
@@ -528,19 +567,19 @@ export function buildAdminApiSections(user) {
 		},
 		{
 			id: "admin-heleket",
-			title: "Heleket payments (admin)",
+			title: "Heleket — /payment/heleket/*",
 			icon: CreditCard,
-			description: "Prefix `/payment/heleket/`",
+			description: "Admin Heleket invoices — admin apiKey",
 			endpoints: [
 				{
 					method: "GET",
 					path: "/payment/heleket/all",
 					title: "All Heleket invoices",
-					description: "Admin-only route (JWT or admin apiKey)",
+					description: "requireApiKey with admin role",
 					icon: CreditCard,
 					params: [],
 					response: { state: "200", data: [] },
-					example: `curl -H "Authorization: Bearer <token>" "${BASE_URL}/payment/heleket/all"`,
+					example: `curl "${BASE_URL}/payment/heleket/all?apiKey=${key}"`,
 				},
 			],
 		},

@@ -9,10 +9,66 @@ import {
 	Package,
 	DollarSign,
 	Server,
+	Layers,
+	CreditCard,
 } from "lucide-react";
 
 export function buildUserApiSections(user) {
+	const k = user?.apiKey || "your_api_key";
 	return [
+		{
+			id: "api-auth",
+			title: "Authentication — apiKey",
+			icon: Key,
+			description:
+				"Protected routes (preHandler) require apiKey only. JWT is for the web app session; call the API with apiKey using one of the patterns below. If the key is missing: 401 with {\"error\":\"Unauthorized\",\"message\":\"apiKey is required\"}.",
+			endpoints: [
+				{
+					method: "GET",
+					path: "/users/balance",
+					title: "Query string",
+					description:
+						"Append ?apiKey= to the URL (most common).",
+					icon: Key,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "Account API key",
+							example: k,
+						},
+					],
+					response: {
+						state: "200",
+						data: { balance: 0 },
+					},
+					example: `curl "${BASE_URL}/users/balance?apiKey=${k}"`,
+				},
+				{
+					method: "GET",
+					path: "/order/orders",
+					title: "X-Api-Key header",
+					description:
+						"No apiKey in the query string; the server reads the header and injects the key internally.",
+					icon: Key,
+					params: [],
+					response: { state: "200", msg: "success", data: [] },
+					example: `curl -H "X-Api-Key: ${k}" "${BASE_URL}/order/orders"`,
+				},
+				{
+					method: "GET",
+					path: "/country",
+					title: "Authorization: ApiKey header",
+					description:
+						"Not Bearer — use the ApiKey scheme followed by the key.",
+					icon: Key,
+					params: [],
+					response: { state: "200", data: [] },
+					example: `curl -H "Authorization: ApiKey ${k}" "${BASE_URL}/country"`,
+				},
+			],
+		},
 		{
 			id: "authentication",
 			title: "Authentication",
@@ -324,31 +380,24 @@ export function buildUserApiSections(user) {
 							name: "country",
 							type: "string",
 							required: true,
-							description: "Country (code or id)",
-							example: "0",
+							description:
+								"P3 country code (e.g. IT) or id — must match a configured P3 country",
+							example: "IT",
 						},
 						{
 							name: "serviceCode",
 							type: "string",
 							required: true,
-							description: "Service code",
-							example: "tg",
+							description: "P3 service code (e.g. wa)",
+							example: "wa",
 						},
 						{
 							name: "server",
 							type: "string",
-							required: false,
+							required: true,
 							description:
-								"Users: 1-based server index from GET /provider3/operators",
+								"Required: 1-based index (1 … N). N = operatorCount from GET /provider3/pricing-by-country for that country + service.",
 							example: "1",
-						},
-						{
-							name: "operator",
-							type: "string",
-							required: false,
-							description:
-								"Admin: raw upstream operator id (optional alternative to server)",
-							example: "op3410",
 						},
 					],
 					response: {
@@ -361,7 +410,86 @@ export function buildUserApiSections(user) {
 					},
 					example: `curl -X GET "${BASE_URL}/provider3/get-number?apiKey=${
 						user?.apiKey || "your_api_key"
-					}&country=0&serviceCode=tg&server=1"`,
+					}&country=IT&serviceCode=wa&server=1"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/countries-by-service",
+					title: "P3 — countries from access snapshot (by service)",
+					description:
+						"Rows from the last access sync for this service (country name, ccode, accessCount). No raw operator ids. Optional interval (default from server env, e.g. 30min).",
+					icon: Globe,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "Your API key",
+							example: user?.apiKey || "your_api_key",
+						},
+						{
+							name: "serviceCode",
+							type: "string",
+							required: true,
+							description: "P3 service code",
+							example: "wa",
+						},
+						{
+							name: "interval",
+							type: "string",
+							required: false,
+							description: "e.g. 30min (must match synced snapshot)",
+							example: "30min",
+						},
+					],
+					response: {
+						state: "200",
+						data: [
+							{
+								country: "Italy",
+								ccode: "IT",
+								accessCount: 10,
+							},
+						],
+						interval: "30min",
+					},
+					example: `curl -X GET "${BASE_URL}/provider3/countries-by-service?apiKey=${
+						user?.apiKey || "your_api_key"
+					}&serviceCode=wa"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/get-message",
+					title: "Get SMS (Provider 3)",
+					description:
+						"Same as /order/get-message when order uses provider 3 — orderId required.",
+					icon: Mail,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "Your API key",
+							example:
+								user?.apiKey || "your_api_key",
+						},
+						{
+							name: "orderId",
+							type: "string",
+							required: true,
+							description: "Order id",
+							example: "ABC123XYZ456",
+						},
+					],
+					response: {
+						code: 200,
+						status: "ok",
+						message: "Message received",
+						data: "123456",
+					},
+					example: `curl -X GET "${BASE_URL}/provider3/get-message?apiKey=${
+						user?.apiKey || "your_api_key"
+					}&orderId=ABC123XYZ456"`,
 				},
 				{
 					method: "GET",
@@ -757,11 +885,85 @@ export function buildUserApiSections(user) {
 			],
 		},
 		{
+			id: "payments",
+			title: "Payments",
+			icon: CreditCard,
+			description:
+				"`/payment/*` routes — requireUser() so you must send apiKey. Webhook has no user auth (signature verified server-side).",
+			endpoints: [
+				{
+					method: "POST",
+					path: "/payment/create-invoice",
+					title: "Create payment invoice",
+					description:
+						"Headers: Content-Type: application/json. Body includes apiKey and amount fields per handler.",
+					icon: CreditCard,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "In JSON body",
+							example: k,
+						},
+					],
+					response: {
+						state: "200",
+						data: { invoiceUrl: "https://..." },
+					},
+					example: `curl -X POST "${BASE_URL}/payment/create-invoice" -H "Content-Type: application/json" -d "{\\"apiKey\\":\\"${k}\\"}"`,
+				},
+				{
+					method: "GET",
+					path: "/payment/history",
+					title: "Payment history",
+					description: "Requires a user identified by apiKey.",
+					icon: CreditCard,
+					params: [
+						{
+							name: "apiKey",
+							type: "string",
+							required: true,
+							description: "Query or header",
+							example: k,
+						},
+					],
+					response: { state: "200", data: [] },
+					example: `curl "${BASE_URL}/payment/history?apiKey=${k}"`,
+				},
+				{
+					method: "POST",
+					path: "/payment/webhook",
+					title: "Webhook (payment provider)",
+					description:
+						"No apiKey; called by the provider. Signature verified on the server.",
+					icon: CreditCard,
+					params: [],
+					response: { state: "200", message: "ok" },
+					example: `# Called by payment provider only`,
+				},
+				{
+					method: "GET",
+					path: "/payment/success",
+					title: "Success redirect page",
+					description: "Optional after checkout.",
+					icon: CreditCard,
+					params: [],
+					response: {
+						state: "200",
+						message:
+							"Payment successful! Your balance will be updated shortly.",
+					},
+					example: `curl "${BASE_URL}/payment/success"`,
+				},
+			],
+		},
+		{
 			id: "services",
 			title: "Services",
 			icon: Package,
 			description:
-				"Get available services for SMS verification",
+				"Services for providers 1 and 2. For Provider 3 use section Provider 3 — catalog (read).",
 			endpoints: [
 				{
 					method: "GET",
@@ -799,7 +1001,7 @@ export function buildUserApiSections(user) {
 			title: "Countries",
 			icon: Globe,
 			description:
-				"Get available countries for phone numbers",
+				"Countries for providers 1 and 2 (shared catalog). Provider 3 uses its own catalog — see section Provider 3 — catalog (read).",
 			endpoints: [
 				{
 					method: "GET",
@@ -833,11 +1035,102 @@ export function buildUserApiSections(user) {
 			],
 		},
 		{
+			id: "provider3-catalog",
+			title: "Provider 3 — catalog (read)",
+			icon: Layers,
+			description:
+				"P3 uses separate tables (p3_countries, p3_services). Public read — no JWT or apiKey required (curl/Postman friendly).",
+			endpoints: [
+				{
+					method: "GET",
+					path: "/provider3/catalog/countries",
+					title: "List P3 countries (configured)",
+					description:
+						"Distinct P3 countries that appear in Provider 3 pricing (id, name, code_country).",
+					icon: Globe,
+					params: [],
+					response: {
+						state: "200",
+						data: [
+							{
+								id: 1,
+								name: "Italy",
+								code_country: "IT",
+							},
+						],
+					},
+					example: `curl "${BASE_URL}/provider3/catalog/countries"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/catalog/services",
+					title: "P3 services — by country or full matrix",
+					description:
+						"Public. Without countryId: services with countries[] (minimal fields). With ?countryId= (p3_countries.id): list for that country. Response is intentionally small — use /provider3/pricing-by-country for price and operatorCount.",
+					icon: Package,
+					params: [
+						{
+							name: "countryId",
+							type: "number",
+							required: false,
+							description:
+								"Omit for all services + countries; set to filter one country",
+							example: "1",
+						},
+					],
+					response: {
+						state: "200",
+						data: [
+							{
+								serviceCode: "wa",
+								countries: [
+									{
+										countryName: "Italy",
+										code_country: "IT",
+									},
+								],
+							},
+						],
+					},
+					example: `curl "${BASE_URL}/provider3/catalog/services"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/pricing-by-country",
+					title: "P3 pricing by P3 country id",
+					description:
+						"Public. Per-service price and operatorCount (for Server 1…N) for one P3 country (countryId = p3_countries.id).",
+					icon: DollarSign,
+					params: [
+						{
+							name: "countryId",
+							type: "number",
+							required: true,
+							description: "P3 country id",
+							example: "1",
+						},
+					],
+					response: {
+						state: "200",
+						data: [
+							{
+								serviceCode: "wa",
+								serviceName: "WhatsApp",
+								price: 1.5,
+								operatorCount: 3,
+							},
+						],
+					},
+					example: `curl "${BASE_URL}/provider3/pricing-by-country?countryId=1"`,
+				},
+			],
+		},
+		{
 			id: "pricing",
 			title: "Pricing",
 			icon: DollarSign,
 			description:
-				"Get pricing information for services",
+				"Pricing for providers 1 and 2. Provider 3: use section Provider 3 — catalog (read) or /provider3/pricing-by-country.",
 			endpoints: [
 				{
 					method: "GET",

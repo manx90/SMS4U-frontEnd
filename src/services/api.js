@@ -357,65 +357,6 @@ export const provider3Api = {
 		return response;
 	},
 
-	getProvider3Operators: async (
-		serviceCode,
-		country,
-		interval,
-	) => {
-		const params = { serviceCode, country };
-		if (
-			interval != null &&
-			String(interval).trim() !== ""
-		) {
-			params.interval = String(interval).trim();
-		}
-		const response = await api.get(
-			"/provider3/operators",
-			{ params },
-		);
-		return response;
-	},
-
-	getProvider3OperatorsCount: async (
-		serviceCode,
-		country,
-		interval,
-	) => {
-		const params = { serviceCode, country };
-		if (
-			interval != null &&
-			String(interval).trim() !== ""
-		) {
-			params.interval = String(interval).trim();
-		}
-		return await api.get(
-			"/provider3/operators-count",
-			{ params },
-		);
-	},
-
-	getProvider3Operator: async (
-		serviceCode,
-		country,
-		server,
-		interval,
-	) => {
-		const params = {
-			serviceCode,
-			country,
-			server: String(server),
-		};
-		if (
-			interval != null &&
-			String(interval).trim() !== ""
-		) {
-			params.interval = String(interval).trim();
-		}
-		return await api.get("/provider3/operator", {
-			params,
-		});
-	},
-
 	provider3AccessSync: async ({
 		serviceCode,
 		serviceName,
@@ -501,8 +442,13 @@ export const provider3Api = {
 	},
 
 	getCatalogServices: async (countryId) => {
+		const params =
+			countryId != null &&
+			String(countryId).trim() !== ""
+				? { countryId }
+				: {};
 		return await api.get("/provider3/catalog/services", {
-			params: { countryId },
+			params,
 		});
 	},
 
@@ -516,6 +462,18 @@ export const provider3Api = {
 		return await api.get("/provider3/admin/service-create", {
 			params: { servicename, code },
 		});
+	},
+
+	adminP3CatalogCountries: async () => {
+		return await api.get(
+			"/provider3/admin/p3-catalog-countries",
+		);
+	},
+
+	adminP3CatalogServices: async () => {
+		return await api.get(
+			"/provider3/admin/p3-catalog-services",
+		);
 	},
 
 	configList: async () => {

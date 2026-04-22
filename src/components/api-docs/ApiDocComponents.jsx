@@ -45,8 +45,10 @@ export function EndpointCard({
 	icon: Icon,
 	expandedSections,
 	toggleSection,
+	endpointKey,
 }) {
-	const sectionId = `${method}-${path}`;
+	const sectionId =
+		endpointKey ?? `${method}-${path}`;
 	const isExpanded = expandedSections[sectionId];
 
 	return (
