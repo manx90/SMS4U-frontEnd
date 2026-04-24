@@ -414,51 +414,6 @@ export function buildUserApiSections(user) {
 				},
 				{
 					method: "GET",
-					path: "/provider3/countries-by-service",
-					title: "P3 — countries from access snapshot (by service)",
-					description:
-						"Rows from the last access sync for this service (country name, ccode, accessCount). No raw operator ids. Optional interval (default from server env, e.g. 30min).",
-					icon: Globe,
-					params: [
-						{
-							name: "apiKey",
-							type: "string",
-							required: true,
-							description: "Your API key",
-							example: user?.apiKey || "your_api_key",
-						},
-						{
-							name: "serviceCode",
-							type: "string",
-							required: true,
-							description: "P3 service code",
-							example: "wa",
-						},
-						{
-							name: "interval",
-							type: "string",
-							required: false,
-							description: "e.g. 30min (must match synced snapshot)",
-							example: "30min",
-						},
-					],
-					response: {
-						state: "200",
-						data: [
-							{
-								country: "Italy",
-								ccode: "IT",
-								accessCount: 10,
-							},
-						],
-						interval: "30min",
-					},
-					example: `curl -X GET "${BASE_URL}/provider3/countries-by-service?apiKey=${
-						user?.apiKey || "your_api_key"
-					}&serviceCode=wa"`,
-				},
-				{
-					method: "GET",
 					path: "/provider3/get-message",
 					title: "Get SMS (Provider 3)",
 					description:
@@ -1122,6 +1077,37 @@ export function buildUserApiSections(user) {
 						],
 					},
 					example: `curl "${BASE_URL}/provider3/pricing-by-country?countryId=1"`,
+				},
+				{
+					method: "GET",
+					path: "/provider3/accessinfo",
+					title: "Server slots by country (one service)",
+					description:
+						"Public. For a given service code, lists configured countries where at least one server slot exists (`serverCount`). Same slot order as GET /provider3/get-number. Countries with zero slots are omitted.",
+					icon: Globe,
+					params: [
+						{
+							name: "serviceCode",
+							type: "string",
+							required: true,
+							description: "Service code (e.g. wa)",
+							example: "wa",
+						},
+					],
+					response: {
+						state: "200",
+						data: {
+							serviceCode: "wa",
+							countries: [
+								{
+									countryName: "Pakistan",
+									code_country: "PK",
+									serverCount: 3,
+								},
+							],
+						},
+					},
+					example: `curl "${BASE_URL}/provider3/accessinfo?serviceCode=wa"`,
 				},
 			],
 		},

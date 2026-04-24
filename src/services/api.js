@@ -420,23 +420,6 @@ export const provider3Api = {
 		return response;
 	},
 
-	countriesByService: async (
-		serviceCode,
-		interval,
-	) => {
-		const params = { serviceCode };
-		if (
-			interval != null &&
-			String(interval).trim() !== ""
-		) {
-			params.interval = String(interval).trim();
-		}
-		return await api.get(
-			"/provider3/countries-by-service",
-			{ params },
-		);
-	},
-
 	getCatalogCountries: async () => {
 		return await api.get("/provider3/catalog/countries");
 	},
